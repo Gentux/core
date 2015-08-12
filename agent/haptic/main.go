@@ -59,6 +59,7 @@ func main() {
 	// NOTE : libnan has an init() func that's already been called at this point and loaded the configuration file
 
 	if len(os.Args) <= 1 {
+		// TODO Print help message
 		return
 	}
 
@@ -82,7 +83,7 @@ func main() {
 	}
 
 	// Temporarily disabled server mode for testing
-	return
+	//return
 
 	RunServer()
 }
