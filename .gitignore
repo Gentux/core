@@ -1,0 +1,23 @@
+# Haptic frontend
+agent/haptic/public/
+
+# Generated files
+killDB.sh
+
+# Data files
+studio/
+mysqlDump.sql
+
+# Binaries
+agent/haptic/haptic
+agent/haptic/plugins/ldap/ldap
+agent/haptic/plugins/owncloud/owncloud
+plugins/ldap/ldap
+plugins/owncloud/owncloud
+
+
+# Logging files
+agent/haptic/activity.log
+agent/haptic/default.log
+haptic.log
+npm-debug.log
