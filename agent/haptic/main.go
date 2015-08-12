@@ -66,9 +66,6 @@ func main() {
 	SetupPlugins()
 	defer StopPlugins()
 
-	// TestLdap()
-	// return
-
 	Log("Initialise database driver")
 	InitialiseDb()
 	defer ShutdownDb()
@@ -80,12 +77,9 @@ func main() {
 		adapter.ActivateUser(os.Args[2])
 	case "del":
 		adapter.DeleteUser(os.Args[2])
+	case "serve":
+		RunServer()
 	}
-
-	// Temporarily disabled server mode for testing
-	//return
-
-	RunServer()
 }
 
 func SetupPlugins() {
