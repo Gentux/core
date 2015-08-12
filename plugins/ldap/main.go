@@ -26,6 +26,25 @@ func (p *Ldap) Configure(_hostname string, _outMsg *string) error {
 	return nil
 }
 
+func (p *Ldap) listUser(jsonParams string, _outMsg *string) error {
+	*_outMsg = "0" // return code meaning failure of operation
+
+	sListUserPhpScript := fmt.Sprintf("%s/list_LDAP_accounts.php ", nan.Config().CommonBaseDir)
+
+	cmd := exec.Command("/usr/bin/php", "-f", sListUserPhpScript,
+		/* necessary ? */ "2>/dev/null")
+
+	out, err := cmd.Output()
+	if err != nil {
+		fmt.Printf("Failed to run script list_LDAP_accounts.php, error: %s, output: %s\n",
+			err, string(out))
+	} else {
+		*_outMsg = string(out)
+	}
+
+	return nil
+}
+
 func (p *Ldap) AddUser(jsonParams string, _outMsg *string) error {
 	*_outMsg = "0" // return code meaning failure of operation
 
@@ -37,7 +56,7 @@ func (p *Ldap) AddUser(jsonParams string, _outMsg *string) error {
 		return nil
 	}
 
-	sAddUserPhpScript := "add_LDAP_user.php"
+	sAddUserPhpScript := fmt.Sprintf("%s/add_LDAP_user.php ", nan.Config().CommonBaseDir)
 
 	cmd := exec.Command("/usr/bin/php", "-f", sAddUserPhpScript, "--", params.UserId, params.Password,
 		/* necessary ? */ "2>/dev/null")
@@ -66,7 +85,7 @@ func (p *Ldap) ForceDisableAccount(jsonParams string, _outMsg *string) error {
 		return nil
 	}
 
-	sForceDisableUserPhpScript := "force_disable_LDAP_user.php"
+	sForceDisableUserPhpScript := fmt.Sprintf("%s/force_disable_LDAP_user.php ", nan.Config().CommonBaseDir)
 
 	//fmt.Println("Running force disable for:", params.UserId)
 
@@ -104,7 +123,7 @@ func (p *Ldap) DisableAccount(jsonParams string, _outMsg *string) error {
 
 	// *_outMsg = ImpLdapDisableAccount(params.UserId)
 
-	sDisableUserPhpScript := "disable_LDAP_user.php"
+	sDisableUserPhpScript := fmt.Sprintf("%s/disable_LDAP_user.php ", nan.Config().CommonBaseDir)
 
 	cmd := exec.Command("/usr/bin/php", "-f", sDisableUserPhpScript, "--", params.UserId,
 		/* necessary ? */ "2>/dev/null")
