@@ -52,7 +52,7 @@ func DeleteUser(p AccountParams) {
 		ExitError(ErrAccountDoesNotExist)
 	}
 
-	ExitOk(OkAccountBeingDeleted)
+	nan.PrintOk(OkAccountBeingDeleted)
 }
 
 // ========================================================================================================================
