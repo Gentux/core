@@ -1,7 +1,7 @@
 package main
 
 import (
-	// "fmt"
+	"encoding/json"
 	//"errors"
 	"log"
 	"net/http"
@@ -22,18 +22,33 @@ type DefaultReply struct {
 // ====================================================================================================
 
 type GetUsersListReply struct {
-	UsersJsonArray []string
+	UsersJsonArray string
 }
 
 func (p *ServiceUsers) GetList(r *http.Request, args *NoArgs, reply *GetUsersListReply) error {
 
-	var e error
-	reply.UsersJsonArray, e = adapter.GetUsers()
+	var (
+		users      []map[string]string
+		users_mail []string
+		e          error
+	)
+
+	users_mail, e = adapter.GetUsers()
+	for _, user_mail := range users_mail {
+		user := map[string]string{}
+
+		user["Firstname"], user["Lastname"], user["Email"], user["Password"], user["License"] =
+			GetUserAccountParamsForActivation(user_mail)
+
+		users = append(users, user)
+	}
 
 	if e != nil {
 		log.Println(e)
 	}
 
+	message, _ := json.Marshal(users)
+	reply.UsersJsonArray = string(message)
 	return nil
 }
 

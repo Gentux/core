@@ -34,6 +34,7 @@ func RunServer() {
 
 	http.Handle("/rpc", pRpcServer)
 
+	log.Println("Now listening on http://localhost:8081")
 	e := http.ListenAndServe(":8081", nil)
 	if e != nil {
 		log.Fatal(e)
