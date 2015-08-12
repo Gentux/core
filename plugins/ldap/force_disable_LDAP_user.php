@@ -7,6 +7,9 @@ $ldap_connection = connect_AD();
 // Our DN
 $ldap_base_dn = 'OU=NanocloudUsers,DC=intra,DC=nanocloud,DC=com';
 
+// Command line parameters
+$email = $argv[1];
+
 // This filter will get the user
 $search_filter = '(&(objectCategory=person)(mail=' . $email . ')(!(userAccountControl:1.2.840.113556.1.4.803:=2)))';
 
@@ -17,7 +20,6 @@ $count_accounts = ldap_count_entries($ldap_connection, $result);
 if ($count_accounts == 1) {
 
   $account = ldap_get_entries($ldap_connection, $result);
-
   $dn=$account[0]["dn"];
 
   $ldaprecord["objectClass"] = "User";

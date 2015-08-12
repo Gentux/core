@@ -4,9 +4,11 @@ include './connection.php';
 
 $ldap_connection = connect_AD();
 
-
 // Our DN
-$ldap_base_dn = 'OU=NanocloudUsers,DC=intra,DC=nxbay,DC=com';
+$ldap_base_dn = 'OU=NanocloudUsers,DC=intra,DC=nanocloud,DC=com';
+
+// Command line parameters
+$sam = $argv[1];
 
 // This filter will get the user
 $search_filter = '(&(objectCategory=person)(samaccountname=' . $sam . '))';
@@ -33,8 +35,7 @@ if ($count_accounts == 1) {
     fwrite(STDERR, "An error occurred during LDAP modification\n");
     exit(1);
   }
-}
-else {
+} else {
   fwrite(STDERR, "An error occurred. SAM account not available\n");
   exit(1);
 }
