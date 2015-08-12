@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-
-	//nan "nanocloud.com/zeroinstall/lib/libnan"
 )
 
 type adapter_t struct{}
@@ -37,30 +35,32 @@ func (o adapter_t) ActivateUser(_Email string) error {
 }
 
 func (o adapter_t) GetUsers() ([]string, error) {
+	var (
+		user_id  int
+		username string
+		users    []string
+	)
 
-	fmt.Println("TODO GetUsers")
+	rows, err := g_Db.Query("select user_id, username from guacamole_user")
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer rows.Close()
 
-	// var UsersJsonArray []string
-
-	// e := g_pDb.View(func(tx *bolt.Tx) error {
-
-	// 	bucket := tx.Bucket([]byte("users"))
-	// 	if bucket == nil {
-	// 		return errors.New("Bucket 'users' doesn't exist")
-	// 	}
-
-	// 	c := bucket.Cursor()
-
-	// 	for k, v := c.First(); k != nil; k, v = c.Next() {
-	// 		UsersJsonArray = append(UsersJsonArray, string(v))
-	// 	}
-
-	// 	return nil
-	// })
-
-	// return UsersJsonArray, e
-
-	return nil, nil
+	for rows.Next() {
+		err := rows.Scan(&user_id, &username)
+		if err != nil {
+			fmt.Println(err)
+		}
+		users = append(users, username)
+	}
+	err = rows.Err()
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	return users, nil
 }
 
 func (o adapter_t) UpdateUserEmail(_PrevEmail, _NewEmail string) error {
