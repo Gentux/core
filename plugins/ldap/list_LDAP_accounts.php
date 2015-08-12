@@ -11,26 +11,36 @@ $ldap_base_dn = 'OU=NanocloudUsers,DC=intra,DC=nanocloud,DC=com';
 $search_filter = '(&(objectCategory=person)(samaccountname=*))';
 
 // Query the LDAP server
-$result = ldap_search($ldap_connection, $ldap_base_dn, $search_filter);
+$ldap_result = ldap_search($ldap_connection, $ldap_base_dn, $search_filter);
 
-echo "Number of entries returned is " . ldap_count_entries($ldap_connection, $result) . "\n";
 
-echo "Getting entries ...\n";
-$info = ldap_get_entries($ldap_connection, $result);
-echo "Data for " . $info["count"] . " items returned:\n";
+$result = array();
+$result['count'] = ldap_count_entries($ldap_connection, $ldap_result);
+
+$result['users'] = array();
+
+$info = ldap_get_entries($ldap_connection, $ldap_result);
 
 for ($i=0; $i<$info["count"]; $i++) {
-  echo "--------------------------------------------\n";
-  echo "dn is: " . $info[$i]["dn"] . "\n";
-  echo "first cn entry is: " . $info[$i]["cn"][0] . "\n";
-  echo "E-mail is: " . $info[$i]["mail"][0] . "\n";
-  echo "Samaccountname is: " . $info[$i]["samaccountname"][0] . "\n";
-  echo "UserAccountControl is: " . $info[$i]["useraccountcontrol"][0] . "\n";
-  $ac = $info[$i]["useraccountcontrol"][0];
-  if (($ac & 2)==2) $status="Disabled"; else $status="Enabled";
-  echo "User is " . $status . "\n";
+  $user = array(
+    "dn" => $info[$i]["dn"],
+    "cn" => $info[$i]["cn"][0],
+    "mail" => $info[$i]["mail"][0],
+    "samaccountname" => $info[$i]["samaccountname"][0],
+    "useraccountcontrol" => $info[$i]["useraccountcontrol"][0]
+  );
+
+  $account_control = $info[$i]["useraccountcontrol"][0];
+  if (($account_control & 2) == 2) {
+    $user["status"] = "Disabled";
+  } else {
+    $user["status"] = "Enabled";
+  }
+
+  array_push($result['users'], $user);
 }
 
+echo json_encode($result);
 
 disconnect_AD($ldap_connection);
 ?>
