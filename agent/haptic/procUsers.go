@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 
@@ -163,7 +164,17 @@ func RegisterUser(p AccountParams) {
 		ExitError(ErrAccountExists)
 	}
 
-	G_ProcRegisterProxyUser.sam = "unactivated"
+	var (
+		sam            string
+		account_params []byte
+	)
+
+	account_params, _ = json.Marshal(p)
+	err = g_PluginLdap.Call("Ldap.AddUser", string(account_params), &sam)
+	if err != nil {
+		ExitError(ErrIssueWithAdServer)
+	}
+	G_ProcRegisterProxyUser.sam = sam
 	G_ProcRegisterProxyUser.Do()
 
 	// Store user parameters on disk so that they can be recovered easily by the next call to activateUser
