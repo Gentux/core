@@ -3,10 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-
-	nan "nanocloud.com/zeroinstall/lib/libnan"
+	"path/filepath"
 
 	"github.com/dullgiulio/pingo"
+	"log"
+	"os"
 	"os/exec"
 )
 
@@ -18,8 +19,11 @@ type LDAPConfig struct {
 }
 
 type AccountParams struct {
-	UserId   string
-	Password string
+	UserId    string
+	FirstName string
+	LastName  string
+	Email     string
+	Password  string
 }
 
 type Ldap struct{}
@@ -64,13 +68,12 @@ func (p *Ldap) Configure(jsonConfig string, _outMsg *string) error {
 	return nil
 }
 
-func (p *Ldap) listUser(jsonParams string, _outMsg *string) error {
+func (p *Ldap) ListUser(jsonParams string, _outMsg *string) error {
+	fmt.Println("LDAP Plugin : listUser")
 	*_outMsg = "0" // return code meaning failure of operation
 
-	sListUserPhpScript := fmt.Sprintf("%s/list_LDAP_accounts.php ", nan.Config().CommonBaseDir)
-
-	cmd := exec.Command("/usr/bin/php", "-f", sListUserPhpScript,
-		/* necessary ? */ "2>/dev/null")
+	cmd := exec.Command("/usr/bin/php", "list_LDAP_accounts.php")
+	cmd.Dir = g_LDAPConfig.ScripsDir
 
 	out, err := cmd.Output()
 	if err != nil {
@@ -89,21 +92,20 @@ func (p *Ldap) AddUser(jsonParams string, _outMsg *string) error {
 	var params AccountParams
 
 	if err := json.Unmarshal([]byte(jsonParams), &params); err != nil {
-		r := nan.NewExitCode(0, "ERROR: failed to unmarshal Ldap.AccountParams : "+err.Error())
-		*_outMsg = r.ToJson()
+		r := fmt.Sprintf("ERROR: failed to unmarshal Ldap.AccountParams : %s", err.Error())
+		log.Printf(r)
+		os.Exit(0)
+		*_outMsg = r
 		return nil
 	}
 
-	sAddUserPhpScript := fmt.Sprintf("%s/add_LDAP_user.php ", nan.Config().CommonBaseDir)
-
-	cmd := exec.Command("/usr/bin/php", "-f", sAddUserPhpScript, "--", params.UserId, params.Password,
-		/* necessary ? */ "2>/dev/null")
+	cmd := exec.Command("/usr/bin/php", "add_LDAP_user.php", params.Email, params.Password)
+	cmd.Dir = g_LDAPConfig.ScripsDir
 
 	out, err := cmd.Output()
 	if err != nil {
 		fmt.Printf("Failed to run script add_LDAP_user.php for email <%s> and password <%s>, error: %s, output: %s\n",
-			params.UserId, params.Password, err, string(out))
-
+			params.Email, params.Password, err, string(out))
 	} else {
 		*_outMsg = string(out)
 
@@ -118,17 +120,18 @@ func (p *Ldap) ForceDisableAccount(jsonParams string, _outMsg *string) error {
 	var params AccountParams
 
 	if err := json.Unmarshal([]byte(jsonParams), &params); err != nil {
-		r := nan.NewExitCode(0, "ERROR: failed to unmarshal Ldap.AccountParams : "+err.Error())
-		*_outMsg = r.ToJson()
+		r := fmt.Sprintf("ERROR: failed to unmarshal Ldap.AccountParams : %s", err.Error())
+		log.Printf(r)
+		os.Exit(0)
+		*_outMsg = r
 		return nil
 	}
 
-	sForceDisableUserPhpScript := fmt.Sprintf("%s/force_disable_LDAP_user.php ", nan.Config().CommonBaseDir)
-
 	//fmt.Println("Running force disable for:", params.UserId)
 
-	cmd := exec.Command("/usr/bin/php", "-f", sForceDisableUserPhpScript, "--", params.UserId,
-		/* necessary ? */ "2>/dev/null")
+	// TODO UserId is wrong here, use SAMACCOUNT (this piece of data is not stored yet)
+	cmd := exec.Command("/usr/bin/php", "force_disable_LDAP_user.php", params.UserId)
+	cmd.Dir = g_LDAPConfig.ScripsDir
 
 	//fmt.Println("Php done")
 
@@ -154,17 +157,17 @@ func (p *Ldap) DisableAccount(jsonParams string, _outMsg *string) error {
 	var params AccountParams
 
 	if err := json.Unmarshal([]byte(jsonParams), &params); err != nil {
-		r := nan.NewExitCode(0, "ERROR: failed to unmarshal Ldap.AccountParams : "+err.Error())
-		*_outMsg = r.ToJson()
+		r := fmt.Sprintf("ERROR: failed to unmarshal Ldap.AccountParams : %s", err.Error())
+		log.Printf(r)
+		os.Exit(0)
+		*_outMsg = r
 		return nil
 	}
 
 	// *_outMsg = ImpLdapDisableAccount(params.UserId)
 
-	sDisableUserPhpScript := fmt.Sprintf("%s/disable_LDAP_user.php ", nan.Config().CommonBaseDir)
-
-	cmd := exec.Command("/usr/bin/php", "-f", sDisableUserPhpScript, "--", params.UserId,
-		/* necessary ? */ "2>/dev/null")
+	cmd := exec.Command("/usr/bin/php", "disable_LDAP_user.php", params.UserId)
+	cmd.Dir = g_LDAPConfig.ScripsDir
 
 	out, err := cmd.Output()
 	if err != nil {
@@ -175,7 +178,7 @@ func (p *Ldap) DisableAccount(jsonParams string, _outMsg *string) error {
 		*_outMsg = "1" // success
 	}
 
-	// sPhpScript := fmt.Sprintf("%s/disable_LDAP_user.php ", nan.Config().CommonBaseDir)
+	// sPhpScript := fmt.Sprintf("%s/disable_LDAP_user.php ", nan.Config().ScripsDir)
 	// cmd := exec.Command("/usr/bin/php", "-f", sPhpScript, "--", _Sam)
 
 	// _, err := cmd.Output()
