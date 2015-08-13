@@ -1,5 +1,6 @@
-# Haptic frontend
+# Haptic
 agent/haptic/public/
+agent/haptic/plugins/
 
 # Generated files
 plugins/ldap/configuration.php
@@ -8,6 +9,7 @@ killDB.sh
 # Data files
 studio/
 mysqlDump.sql
+*-local*
 
 # Binaries
 agent/haptic/haptic
