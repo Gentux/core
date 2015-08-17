@@ -25,10 +25,10 @@ type ApplicationParams struct {
 }
 
 // ========================================================================================================================
-// Procedure: ListUsers
+// Procedure: ListApplications
 //
 // Does:
-// - Return list of users
+// - Return list of applications published by Active Directory
 // ========================================================================================================================
 func ListApplications() string {
 
@@ -51,6 +51,9 @@ func ListApplications() string {
 		panic("Can't run remote command: " + err.Error())
 	}
 
+	if []byte(response)[0] != []byte("[")[0] {
+		response = fmt.Sprintf("[%s]", response)
+	}
 	json.Unmarshal([]byte(response), &applications)
 	for _, application := range applications {
 		application.IconContents = []byte(base64.StdEncoding.EncodeToString(application.IconContents))
