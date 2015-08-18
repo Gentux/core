@@ -14,6 +14,9 @@
     "ConsulPath" : "/var/nanocloud/cluster/consul/consul",
 
     "Proxy" : {
+
+        "FrontEndRootDir" : "/path/to/frontend",
+
         "MaxNumRegistrations" : 4,
         "MaxNumAccounts" : 3,
         "NumRetries" : 3,

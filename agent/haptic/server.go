@@ -6,6 +6,8 @@ import (
 	"github.com/gorilla/rpc"
 	"github.com/gorilla/rpc/json"
 
+	nan "nanocloud.com/zeroinstall/lib/libnan"
+
 	"net/http"
 )
 
@@ -18,13 +20,13 @@ type DefaultReply struct {
 
 func StaticHandler(w http.ResponseWriter, pRequest *http.Request) {
 
-	url := ""
+	url := pRequest.URL.String()
 
-	if pRequest.URL.String() == "/" {
-		url = url + "index.html"
+	if url == "/" {
+		url = "/index.html"
 	}
 
-	LocalPath := "public" + pRequest.URL.String()
+	LocalPath := nan.Config().Proxy.FrontendRootDir + url
 
 	http.ServeFile(w, pRequest, LocalPath)
 }

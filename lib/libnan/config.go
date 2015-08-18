@@ -27,6 +27,7 @@ type PluginParams map[string]string
 type PluginsInfo_t map[string]PluginParams
 
 type ProxyConfig_t struct {
+	FrontendRootDir     string
 	MaxNumRegistrations int
 	MaxNumAccounts      int
 	NumRetries          int
@@ -122,6 +123,7 @@ func initConfigWithUnsetValues() {
 		ConsulPath:    unsetstring,
 
 		Proxy: ProxyConfig_t{
+			FrontendRootDir:     unsetstring,
 			MaxNumRegistrations: unsetint,
 			MaxNumAccounts:      unsetint,
 			NumRetries:          unsetint,
@@ -148,6 +150,11 @@ func ConfigFileValid() bool {
 	}
 
 	if g_Config.Role == "proxy" {
+
+		if g_Config.Proxy.FrontendRootDir == unsetstring {
+			fmt.Println(`Missing config param : "Proxy" : { "FrontendRootDir" : "/path/to/frontend" }`)
+			return false
+		}
 
 		if g_Config.Proxy.MaxNumRegistrations == unsetint {
 			fmt.Println(`Missing config param : "Proxy" : { "MaxNumRegistrations" : x }`)
