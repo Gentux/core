@@ -14,6 +14,7 @@ ldap: ./bin/haptic/plugins/ldap/ldap
 
 haptic: ldap owncloud ./bin/haptic/haptic
 
+.PHONY: ./bin/haptic/haptic
 ./bin/haptic/haptic:
 	go build -o ./bin/haptic/haptic nanocloud.com/zeroinstall/agent/haptic
 
