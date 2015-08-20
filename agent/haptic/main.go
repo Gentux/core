@@ -18,8 +18,6 @@
 
 package main
 
-//NOP
-
 import (
 	"encoding/json"
 	"os"
