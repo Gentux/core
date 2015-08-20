@@ -335,7 +335,7 @@ func (p *ProcCreateWinUser) Do() {
 
 	resp := ""
 
-	params := fmt.Sprintf(`{ "userid" : "%s" }`, G_Account.Email)
+	params := fmt.Sprintf(`{ "UserEmail" : "%s" }`, G_Account.Email)
 
 	g_PluginLdap.Call("Ldap.ForceDisableAccount", params, &resp)
 
@@ -350,7 +350,7 @@ func (p *ProcCreateWinUser) Do() {
 
 	// Add LDAP user
 
-	params = fmt.Sprintf(`{ "userid" : "%s", "password" : "%s" }`, G_Account.Email, G_Account.Password)
+	params = fmt.Sprintf(`{ "UserEmail" : "%s", "password" : "%s" }`, G_Account.Email, G_Account.Password)
 
 	for idx := 0; idx < 3; idx++ {
 		g_PluginLdap.Call("Ldap.AddUser", params, &resp)
@@ -508,8 +508,7 @@ func (p *ProcCreateWinUser) Undo() {
 		Log("Email address not listed in accounts database")
 	}
 
-	// TODO LDAP Plugin
-	params := fmt.Sprintf(`{ "userid" : "%s" }`, G_Account.Email)
+	params := fmt.Sprintf(`{ "UserEmail" : "%s" }`, G_Account.Email)
 	resp := ""
 
 	g_PluginLdap.Call("Ldap.ForceDisableAccount", params, &resp)

@@ -3,26 +3,25 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"path/filepath"
-
-	"github.com/dullgiulio/pingo"
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+
+	"github.com/dullgiulio/pingo"
+
+	nan "nanocloud.com/zeroinstall/lib/libnan"
 )
 
 type LDAPConfig struct {
-	ScripsDir string
-	Username  string
-	Password  string
-	ServerURL string
+	ScriptsDir string
+	Username   string
+	Password   string
+	ServerURL  string
 }
 
 type AccountParams struct {
-	UserId    string
-	FirstName string
-	LastName  string
-	Email     string
+	UserEmail string
 	Password  string
 }
 
@@ -47,9 +46,9 @@ func (p *Ldap) Configure(jsonConfig string, _outMsg *string) error {
 	g_LDAPConfig.ServerURL = ldapConfig["serverUrl"]
 	g_LDAPConfig.Username = ldapConfig["username"]
 	g_LDAPConfig.Password = ldapConfig["password"]
-	g_LDAPConfig.ScripsDir = ldapConfig["scriptsDir"]
+	g_LDAPConfig.ScriptsDir = ldapConfig["scriptsDir"]
 
-	phpConfigFile, e := os.Create(filepath.Join(g_LDAPConfig.ScripsDir, "configuration.php"))
+	phpConfigFile, e := os.Create(filepath.Join(g_LDAPConfig.ScriptsDir, "configuration.php"))
 	if e != nil {
 		r := fmt.Sprintf("ERROR: failed to configure php scripts : %s", err.Error())
 		log.Printf(r)
@@ -69,16 +68,15 @@ func (p *Ldap) Configure(jsonConfig string, _outMsg *string) error {
 }
 
 func (p *Ldap) ListUser(jsonParams string, _outMsg *string) error {
-	fmt.Println("LDAP Plugin : listUser")
+	log.Println("LDAP Plugin : ListUser")
 	*_outMsg = "0" // return code meaning failure of operation
 
 	cmd := exec.Command("/usr/bin/php", "list_LDAP_accounts.php")
-	cmd.Dir = g_LDAPConfig.ScripsDir
+	cmd.Dir = g_LDAPConfig.ScriptsDir
 
 	out, err := cmd.Output()
 	if err != nil {
-		fmt.Printf("Failed to run script list_LDAP_accounts.php, error: %s, output: %s\n",
-			err, string(out))
+		log.Printf("Failed to run script list_LDAP_accounts.php, error: %s, output: %s\n", err, string(out))
 	} else {
 		*_outMsg = string(out)
 	}
@@ -92,20 +90,19 @@ func (p *Ldap) AddUser(jsonParams string, _outMsg *string) error {
 	var params AccountParams
 
 	if err := json.Unmarshal([]byte(jsonParams), &params); err != nil {
-		r := fmt.Sprintf("ERROR: failed to unmarshal Ldap.AccountParams : %s", err.Error())
-		log.Printf(r)
-		os.Exit(0)
-		*_outMsg = r
+		r := nan.NewExitCode(0, "ERROR: failed to unmarshal Ldap.AccountParams : "+err.Error())
+		log.Printf(r.Message) // for on-screen debug output
+		*_outMsg = r.ToJson() // return codes for IPC should use JSON as much as possible
 		return nil
 	}
 
-	cmd := exec.Command("/usr/bin/php", "add_LDAP_user.php", params.Email, params.Password)
-	cmd.Dir = g_LDAPConfig.ScripsDir
+	cmd := exec.Command("/usr/bin/php", "add_LDAP_user.php", params.UserEmail, params.Password)
+	cmd.Dir = g_LDAPConfig.ScriptsDir
 
 	out, err := cmd.Output()
 	if err != nil {
 		fmt.Printf("Failed to run script add_LDAP_user.php for email <%s> and password <%s>, error: %s, output: %s\n",
-			params.Email, params.Password, err, string(out))
+			params.UserEmail, params.Password, err, string(out))
 	} else {
 		*_outMsg = string(out)
 
@@ -120,30 +117,27 @@ func (p *Ldap) ForceDisableAccount(jsonParams string, _outMsg *string) error {
 	var params AccountParams
 
 	if err := json.Unmarshal([]byte(jsonParams), &params); err != nil {
-		r := fmt.Sprintf("ERROR: failed to unmarshal Ldap.AccountParams : %s", err.Error())
-		log.Printf(r)
-		os.Exit(0)
-		*_outMsg = r
+		r := nan.NewExitCode(0, "ERROR: failed to unmarshal Ldap.AccountParams : "+err.Error())
+		log.Printf(r.Message) // for on-screen debug output
+		*_outMsg = r.ToJson() // return codes for IPC should use JSON as much as possible
 		return nil
 	}
 
-	//fmt.Println("Running force disable for:", params.UserId)
+	//fmt.Println("Running force disable for:", params.UserEmail)
 
-	// TODO UserId is wrong here, use SAMACCOUNT (this piece of data is not stored yet)
-	cmd := exec.Command("/usr/bin/php", "force_disable_LDAP_user.php", params.UserId)
-	cmd.Dir = g_LDAPConfig.ScripsDir
-
-	//fmt.Println("Php done")
+	// TODO UserEmail is wrong here, use SAMACCOUNT (this piece of data is not stored yet)
+	// Fred to OP: woot ?
+	cmd := exec.Command("/usr/bin/php", "force_disable_LDAP_user.php", params.UserEmail)
+	cmd.Dir = g_LDAPConfig.ScriptsDir
 
 	out, err := cmd.Output()
 	if err != nil {
 		fmt.Printf("Failed to run script force_disable_LDAP_user.php for email <%s>, error: %s, output: %s\n",
-			params.UserId, err, string(out))
+			params.UserEmail, err, string(out))
 
 	} else {
+		// TODO this return code should be JSON'ified
 		*_outMsg = "1" //success
-		//*_outMsg = string(out)
-
 	}
 
 	// Log("LDAP Check... %s account(s) disabled", string(out))
@@ -157,35 +151,23 @@ func (p *Ldap) DisableAccount(jsonParams string, _outMsg *string) error {
 	var params AccountParams
 
 	if err := json.Unmarshal([]byte(jsonParams), &params); err != nil {
-		r := fmt.Sprintf("ERROR: failed to unmarshal Ldap.AccountParams : %s", err.Error())
-		log.Printf(r)
-		os.Exit(0)
-		*_outMsg = r
+		r := nan.NewExitCode(0, "ERROR: failed to unmarshal Ldap.AccountParams : "+err.Error())
+		log.Printf(r.Message)
+		*_outMsg = r.ToJson() // return codes for IPC should use JSON as much as possible
 		return nil
 	}
 
-	// *_outMsg = ImpLdapDisableAccount(params.UserId)
-
-	cmd := exec.Command("/usr/bin/php", "disable_LDAP_user.php", params.UserId)
-	cmd.Dir = g_LDAPConfig.ScripsDir
+	cmd := exec.Command("/usr/bin/php", "disable_LDAP_user.php", params.UserEmail)
+	cmd.Dir = g_LDAPConfig.ScriptsDir
 
 	out, err := cmd.Output()
 	if err != nil {
 		fmt.Printf("Failed to run script disable_LDAP_user.php for email <%s>, error: %s, output: %s\n",
-			params.UserId, err, string(out))
+			params.UserEmail, err, string(out))
 	} else {
-		// *_outMsg = string(out)
+		// TODO this return code should be JSON'ified
 		*_outMsg = "1" // success
 	}
-
-	// sPhpScript := fmt.Sprintf("%s/disable_LDAP_user.php ", nan.Config().ScripsDir)
-	// cmd := exec.Command("/usr/bin/php", "-f", sPhpScript, "--", _Sam)
-
-	// _, err := cmd.Output()
-	// if err != nil {
-	// 	LogError("Error returned by script disable_LDAP_user.php, error: %s", err)
-	// 	ExitError(nan.ErrSomethingWrong)
-	// }
 
 	return nil
 }
