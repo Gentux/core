@@ -65,12 +65,14 @@ func main() {
 	defer ShutdownDb()
 
 	switch os.Args[1] {
-	case "reg":
+	case "registeruser":
 		adapter.RegisterUser(os.Args[2], os.Args[3], os.Args[4], os.Args[5])
-	case "activ":
+	case "activateuser":
 		adapter.ActivateUser(os.Args[2])
-	case "del":
+	case "deleteuser":
 		adapter.DeleteUser(os.Args[2])
+	case "changepassword":
+		//TODO
 	case "serve":
 		RunServer()
 	}
@@ -80,13 +82,13 @@ func SetupPlugins() {
 	Log("Num plugins referenced in config : %d", len(nan.Config().Plugins))
 
 	// LDAP
-	g_PluginLdap = pingo.NewPlugin("tcp", "plugins/ldap/ldap")
+	g_PluginLdap = pingo.NewPlugin("tcp", nan.Config().CommonBaseDir+"/plugins/ldap/ldap")
 	if g_PluginLdap == nil {
 		nan.ExitErrorf(0, "Failed to start plugin Ldap")
 	}
 
 	// Owncloud
-	g_PluginOwncloud = pingo.NewPlugin("tcp", "plugins/owncloud/owncloud")
+	g_PluginOwncloud = pingo.NewPlugin("tcp", nan.Config().CommonBaseDir+"/plugins/owncloud/owncloud")
 	if g_PluginOwncloud == nil {
 		nan.ExitErrorf(0, "Failed to start plugin Owncloud")
 	}
