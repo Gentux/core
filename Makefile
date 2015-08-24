@@ -37,6 +37,9 @@ dev: haptic
 
 #echo "Copying config.json to: ./agent/haptic/plugins/owncloud/config.json"; \
 
+serve:
+	./bin/haptic/haptic serve
+
 clean:
 	rm ./bin/haptic/haptic
 	rm ./bin/haptic/plugins/ldap/ldap
