@@ -22,15 +22,25 @@ type IaasConfig struct {
 type Iaas struct{}
 
 type VmInfo struct {
-	Id   string
-	Ico  string
-	Name string
-	VM   string
+	Ico         string
+	Name        string
+	DisplayName string
+	Running     bool
+	Locked      bool
 }
 
 var (
 	g_IaasConfig IaasConfig
 )
+
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
 
 func (p *Iaas) Configure(jsonConfig string, _outMsg *string) error {
 	var iaasConfig map[string]string
@@ -50,19 +60,66 @@ func (p *Iaas) Configure(jsonConfig string, _outMsg *string) error {
 	return nil
 }
 
-type ListVMReply struct {
-	AvailableVmList []VmInfo
-	RunningVmList   []VmInfo
-}
-
 func (p *Iaas) ListRunningVm(jsonParams string, _outMsg *string) error {
-	var err error
-	*_outMsg, err = jsonRpcRequest(
+
+	var (
+		response struct {
+			Result struct {
+				AvailableVMNames []string
+				RunningVmNames   []string
+			}
+			Error string
+			Id    int
+		}
+		vmList      []VmInfo
+		icon        string
+		locked      bool
+		running     bool
+		displayName string
+	)
+	jsonResponse, err := jsonRpcRequest(
 		fmt.Sprintf("%s:%s", g_IaasConfig.Url, g_IaasConfig.Port),
 		"Iaas.GetList",
 		nil,
 	)
+	if err != nil {
+		r := nan.NewExitCode(1, "ERROR: failed to contact Iaas API : "+err.Error())
+		log.Printf(r.Message) // for on-screen debug output
+		*_outMsg = r.ToJson() // return codes for IPC should use JSON as much as possible
+		return nil
+	}
 
+	err = json.Unmarshal([]byte(jsonResponse), &response)
+	if err != nil {
+		r := nan.NewExitCode(0, "ERROR: failed to unmarshal Iaas API response : "+err.Error())
+		log.Printf(r.Message) // for on-screen debug output
+		*_outMsg = r.ToJson() // return codes for IPC should use JSON as much as possible
+		return nil
+	}
+
+	// TODO: Lots of Data aren't from iaas API
+	for _, vmName := range response.Result.AvailableVMNames {
+		if strings.Contains(vmName, "windows") {
+			icon = "windows"
+			locked = false
+			displayName = "Windows Applications"
+		} else {
+			icon = "apps"
+			locked = true
+			displayName = "Haptic"
+		}
+		running = stringInSlice(vmName, response.Result.RunningVmNames)
+		vmList = append(vmList, VmInfo{
+			Ico:         icon,
+			Name:        vmName,
+			DisplayName: displayName,
+			Running:     running,
+			Locked:      locked,
+		})
+	}
+
+	jsonOuput, _ := json.Marshal(vmList)
+	*_outMsg = string(jsonOuput)
 	return err
 }
 
