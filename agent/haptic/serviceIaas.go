@@ -20,3 +20,27 @@ func (p *ServiceIaas) GetList(r *http.Request, args *NoArgs, reply *GetVmListRep
 
 	return nil
 }
+
+type RequestState struct {
+	Success bool
+}
+
+func (p *ServiceIaas) Download(r *http.Request, args *NoArgs, reply *RequestState) error {
+
+	requestState, _ := adapter.DownloadWindowsVm()
+	reply.Success = requestState
+
+	return nil
+}
+
+type VmNameArgs struct {
+	VmName string
+}
+
+func (p *ServiceIaas) Start(r *http.Request, args *VmNameArgs, reply *RequestState) error {
+
+	requestState, _ := adapter.StartVm(args.VmName)
+	reply.Success = requestState
+
+	return nil
+}

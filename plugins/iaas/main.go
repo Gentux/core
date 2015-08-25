@@ -126,54 +126,83 @@ func (p *Iaas) ListRunningVm(jsonParams string, _outMsg *string) error {
 func (p *Iaas) DownloadVm(jsonParams string, _outMsg *string) error {
 
 	var (
-		params map[string]string
-		vmName string
+		params = map[string]string{
+			"vmname": jsonParams,
+		}
+		response struct {
+			Result struct {
+				Success bool
+			}
+		}
 	)
 
-	err := json.Unmarshal([]byte(jsonParams), &vmName)
+	jsonResponse, err := jsonRpcRequest(
+		fmt.Sprintf("%s:%s", g_IaasConfig.Url, g_IaasConfig.Port),
+		"Iaas.Download",
+		params,
+	)
 	if err != nil {
-		r := nan.NewExitCode(0, "ERROR: failed to unmarshal Iaas.AccountParams : "+err.Error())
+		r := nan.NewExitCode(1, "ERROR: failed to contact Iaas API : "+err.Error())
 		log.Printf(r.Message) // for on-screen debug output
 		*_outMsg = r.ToJson() // return codes for IPC should use JSON as much as possible
 		return nil
 	}
 
-	params["vmname"] = vmName
+	err = json.Unmarshal([]byte(jsonResponse), &response)
+	if err != nil {
+		r := nan.NewExitCode(0, "ERROR: failed to unmarshal Iaas API response : "+err.Error())
+		log.Printf(r.Message) // for on-screen debug output
+		*_outMsg = r.ToJson() // return codes for IPC should use JSON as much as possible
+		return nil
+	}
 
-	go jsonRpcRequest(
-		g_IaasConfig.Url,
-		"Iaas.Download",
-		params,
-	)
-
-	*_outMsg = "success"
-	return err
+	if response.Result.Success == true {
+		*_outMsg = "true"
+	} else {
+		*_outMsg = "false"
+	}
+	return nil
 }
 
 func (p *Iaas) StartVm(jsonParams string, _outMsg *string) error {
 
 	var (
-		params map[string]string
-		vmName string
+		params = map[string]string{
+			"name": jsonParams,
+		}
+		response struct {
+			Result struct {
+				Success bool
+			}
+		}
 	)
 
-	err := json.Unmarshal([]byte(jsonParams), &vmName)
+	jsonResponse, err := jsonRpcRequest(
+		fmt.Sprintf("%s:%s", g_IaasConfig.Url, g_IaasConfig.Port),
+		"Iaas.Start",
+		params,
+	)
 	if err != nil {
-		r := nan.NewExitCode(0, "ERROR: failed to unmarshal Iaas.AccountParams : "+err.Error())
+		r := nan.NewExitCode(1, "ERROR: failed to contact Iaas API : "+err.Error())
 		log.Printf(r.Message) // for on-screen debug output
 		*_outMsg = r.ToJson() // return codes for IPC should use JSON as much as possible
 		return nil
 	}
 
-	params["vmname"] = vmName
+	err = json.Unmarshal([]byte(jsonResponse), &response)
+	if err != nil {
+		r := nan.NewExitCode(0, "ERROR: failed to unmarshal Iaas API response : "+err.Error())
+		log.Printf(r.Message) // for on-screen debug output
+		*_outMsg = r.ToJson() // return codes for IPC should use JSON as much as possible
+		return nil
+	}
 
-	*_outMsg, err = jsonRpcRequest(
-		g_IaasConfig.Url,
-		"Iaas.Start",
-		params,
-	)
-
-	return err
+	if response.Result.Success == true {
+		*_outMsg = "true"
+	} else {
+		*_outMsg = "false"
+	}
+	return nil
 }
 
 func (p *Iaas) StopVm(jsonParams string, _outMsg *string) error {
