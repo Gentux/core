@@ -44,39 +44,26 @@ func (p *Iaas) Configure(jsonConfig string, _outMsg *string) error {
 		return nil
 	}
 
-	g_IaasConfig.Url = iaasConfig["url"]
-	g_IaasConfig.Port = iaasConfig["port"]
+	g_IaasConfig.Url = iaasConfig["Url"]
+	g_IaasConfig.Port = iaasConfig["Port"]
 
 	return nil
 }
 
+type ListVMReply struct {
+	AvailableVmList []VmInfo
+	RunningVmList   []VmInfo
+}
+
 func (p *Iaas) ListRunningVm(jsonParams string, _outMsg *string) error {
-	var fakeData [2]VmInfo
+	var err error
+	*_outMsg, err = jsonRpcRequest(
+		fmt.Sprintf("%s:%s", g_IaasConfig.Url, g_IaasConfig.Port),
+		"Iaas.GetList",
+		nil,
+	)
 
-	fakeData[0] = VmInfo{
-		Id:   "2",
-		Ico:  "windows",
-		Name: "Test RDP",
-		VM:   "winad",
-	}
-
-	fakeData[1] = VmInfo{
-		Id:   "1",
-		Ico:  "view_module",
-		Name: "Haptic Test",
-		VM:   "proxy",
-	}
-
-	res, err := json.Marshal(fakeData)
-	if err != nil {
-		r := nan.NewExitCode(0, "ERROR: failed to marshal VM list : "+err.Error())
-		log.Printf(r.Message) // for on-screen debug output
-		*_outMsg = r.ToJson() // return codes for IPC should use JSON as much as possible
-		return nil
-	}
-
-	*_outMsg = string(res)
-	return nil
+	return err
 }
 
 func (p *Iaas) DownloadVm(jsonParams string, _outMsg *string) error {
@@ -86,7 +73,8 @@ func (p *Iaas) DownloadVm(jsonParams string, _outMsg *string) error {
 		vmName string
 	)
 
-	if err := json.Unmarshal([]byte(jsonParams), &vmName); err != nil {
+	err := json.Unmarshal([]byte(jsonParams), &vmName)
+	if err != nil {
 		r := nan.NewExitCode(0, "ERROR: failed to unmarshal Iaas.AccountParams : "+err.Error())
 		log.Printf(r.Message) // for on-screen debug output
 		*_outMsg = r.ToJson() // return codes for IPC should use JSON as much as possible
@@ -95,13 +83,14 @@ func (p *Iaas) DownloadVm(jsonParams string, _outMsg *string) error {
 
 	params["vmname"] = vmName
 
-	jsonRpcRequest(
+	go jsonRpcRequest(
 		g_IaasConfig.Url,
 		"Iaas.Download",
 		params,
 	)
 
-	return nil
+	*_outMsg = "success"
+	return err
 }
 
 func (p *Iaas) StartVm(jsonParams string, _outMsg *string) error {
@@ -111,22 +100,23 @@ func (p *Iaas) StartVm(jsonParams string, _outMsg *string) error {
 		vmName string
 	)
 
-	if err := json.Unmarshal([]byte(jsonParams), &vmName); err != nil {
+	err := json.Unmarshal([]byte(jsonParams), &vmName)
+	if err != nil {
 		r := nan.NewExitCode(0, "ERROR: failed to unmarshal Iaas.AccountParams : "+err.Error())
 		log.Printf(r.Message) // for on-screen debug output
 		*_outMsg = r.ToJson() // return codes for IPC should use JSON as much as possible
 		return nil
 	}
 
-	params["name"] = vmName
+	params["vmname"] = vmName
 
-	jsonRpcRequest(
+	*_outMsg, err = jsonRpcRequest(
 		g_IaasConfig.Url,
 		"Iaas.Start",
 		params,
 	)
 
-	return nil
+	return err
 }
 
 func (p *Iaas) StopVm(jsonParams string, _outMsg *string) error {
@@ -136,52 +126,52 @@ func (p *Iaas) StopVm(jsonParams string, _outMsg *string) error {
 		vmName string
 	)
 
-	if err := json.Unmarshal([]byte(jsonParams), &vmName); err != nil {
+	err := json.Unmarshal([]byte(jsonParams), &vmName)
+	if err != nil {
 		r := nan.NewExitCode(0, "ERROR: failed to unmarshal Iaas.AccountParams : "+err.Error())
 		log.Printf(r.Message) // for on-screen debug output
 		*_outMsg = r.ToJson() // return codes for IPC should use JSON as much as possible
 		return nil
 	}
 
-	params["name"] = vmName
+	params["vmname"] = vmName
 
-	jsonRpcRequest(
+	*_outMsg, err = jsonRpcRequest(
 		g_IaasConfig.Url,
 		"Iaas.Stop",
 		params,
 	)
 
-	return nil
+	return err
 }
 
-func jsonRpcRequest(url string, method string, params map[string]string) {
+func jsonRpcRequest(url string, method string, param map[string]string) (string, error) {
+
 	data, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "2.0",
 		"method":  method,
 		"id":      1,
-		"params": []map[string]string{
-			0: params,
-		},
+		"params":  []map[string]string{0: param},
 	})
 	if err != nil {
 		log.Fatalf("Marshal: %v", err)
+		return "", err
 	}
+
 	resp, err := http.Post(url, "application/json", strings.NewReader(string(data)))
 	if err != nil {
 		log.Fatalf("Post: %v", err)
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalf("ReadAll: %v", err)
+		return "", err
 	}
-	result := make(map[string]interface{})
-	// TODO Check result and do something about it
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		log.Fatalf("Unmarshal: %v", err)
-	}
+
+	return string(body), nil
 }
 
 func main() {
