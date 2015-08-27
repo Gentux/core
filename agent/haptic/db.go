@@ -209,7 +209,7 @@ func (p Db) UpdateConnectionUserNameForEmail(Email, UserName string) bool {
 	return true
 }
 
-func (p Db) GetRegisteredUsersInfo(pResults *[]RegisteredUserInfo) {
+func (p Db) GetRegisteredUsersInfo(pResults *[]RegisteredUserInfo) bool {
 	var registeredUserInfo RegisteredUserInfo
 
 	*pResults = []RegisteredUserInfo{}
@@ -223,15 +223,15 @@ func (p Db) GetRegisteredUsersInfo(pResults *[]RegisteredUserInfo) {
 
 	rows, err := g_Db.Query(sQuery)
 	if err != nil {
-		LogError("GetActiveUsersInfo: failed to perform select, error: %s", err)
-		ExitError(ErrIssueWithAccountsDb)
+		LogError("GetActiveUsersInfo E1: failed to perform select on guac db with error: %s", err)
+		return false
 	}
 
 	for rows.Next() != false {
 
 		if err = rows.Scan(&registeredUserInfo.Email); err != nil {
-			LogError("GetRegisteredUsersInfo E1: failed to parse row with error: %s", err)
-			ExitError(ErrIssueWithAccountsDb)
+			LogError("GetRegisteredUsersInfo E2: failed to parse row with error: %s", err)
+			return false
 		}
 
 		registeredUserInfo.CreationTime = GetUserAccountRegistrationTime(registeredUserInfo.Email)
@@ -249,15 +249,15 @@ func (p Db) GetRegisteredUsersInfo(pResults *[]RegisteredUserInfo) {
 
 	rows, err = g_Db.Query(sQuery)
 	if err != nil {
-		LogError("GetActiveUsersInfo E2: failed to perform select, error: %s", err)
-		ExitError(ErrIssueWithAccountsDb)
+		LogError("GetActiveUsersInfo E3: failed to perform select, error: %s", err)
+		return false
 	}
 
 	for rows.Next() != false {
 
 		if err = rows.Scan(&registeredUserInfo.Email); err != nil {
-			LogError("GetRegisteredUsersInfo: failed to parse row with error: %s", err)
-			ExitError(ErrIssueWithAccountsDb)
+			LogError("GetRegisteredUsersInfo E4: failed to parse row with error: %s", err)
+			return false
 		}
 
 		registeredUserInfo.CreationTime = GetUserAccountRegistrationTime(registeredUserInfo.Email)
@@ -266,9 +266,10 @@ func (p Db) GetRegisteredUsersInfo(pResults *[]RegisteredUserInfo) {
 		*pResults = append(*pResults, registeredUserInfo)
 	}
 
+	return true
 }
 
-func (p Db) GetActivatedUsersInfo(pResults *[]ActiveTacUserInfo) {
+func (p Db) GetActivatedUsersInfo(pResults *[]ActiveTacUserInfo) bool {
 	var tacUserInfo ActiveTacUserInfo
 
 	*pResults = []ActiveTacUserInfo{}
@@ -277,17 +278,19 @@ func (p Db) GetActivatedUsersInfo(pResults *[]ActiveTacUserInfo) {
 
 	rows, err := g_Db.Query(sQuery)
 	if err != nil {
-		LogError("GetActiveUsersInfo: failed to perform select, error: %s", err)
-		ExitError(ErrIssueWithAccountsDb)
+		LogError("GetActiveUsersInfo E1: failed to perform select, error: %s", err)
+		return false
 	}
 
 	for rows.Next() != false {
 
 		if err = rows.Scan(&tacUserInfo.TacId, &tacUserInfo.TacUrl, &tacUserInfo.CreationTime); err != nil {
-			LogError("GetActivatedUsersInfo: failed to parse result of query on table talend_tac, error: %s", err)
-			ExitError(ErrIssueWithAccountsDb)
+			LogError("GetActivatedUsersInfo E2: failed to parse result of query on table talend_tac, error: %s", err)
+			return false
 		}
 
 		*pResults = append(*pResults, tacUserInfo)
 	}
+
+	return true
 }

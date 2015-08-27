@@ -16,7 +16,7 @@ var ()
 // - [OPTIONAL] : free application specific resources + storage
 // - DeleteUser (LDAP, AD)
 // ========================================================================================================================
-func DeleteUser(p AccountParams) {
+func DeleteUser(p AccountParams) *nan.Error {
 
 	G_Account = p
 
@@ -31,7 +31,7 @@ func DeleteUser(p AccountParams) {
 	var err error
 
 	if bActive, err = g_Db.IsUserActivated(G_Account.Email); err != nil {
-		ExitError(ErrIssueWithAccountsDb)
+		return LogErrorCode(ErrIssueWithAccountsDb)
 	} else {
 		// TODO insert here freeing of application specific resources
 		G_ProcCreateWinUser.Undo()
@@ -41,7 +41,7 @@ func DeleteUser(p AccountParams) {
 	// thus not visible in db anymore, but still with remaining files inside studio directory, that need to be all deleted
 
 	if bRegistered, err = g_Db.IsUserRegistered(G_Account.Email); err != nil {
-		ExitError(ErrIssueWithAccountsDb)
+		return LogErrorCode(ErrIssueWithAccountsDb)
 	} else {
 		G_ProcRegisterProxyUser.Undo()
 	}
@@ -49,10 +49,10 @@ func DeleteUser(p AccountParams) {
 	if bActive && !bRegistered {
 		LogError("Corrupt account cleaned up : was ACTIVE but didn't look NOT REGISTERED")
 	} else if !bRegistered && !bActive {
-		ExitError(ErrAccountDoesNotExist)
+		return LogErrorCode(ErrAccountDoesNotExist)
 	}
 
-	nan.PrintOk(OkAccountBeingDeleted)
+	return OkAccountBeingDeleted
 }
 
 // ========================================================================================================================
@@ -65,6 +65,6 @@ func ValidateDeleteUserParams() {
 	nan.Debug("Verifying parameters to delete %s account", G_Account.Email)
 
 	if !nan.ValidEmail(G_Account.Email) {
-		ExitError(nan.ErrPbWithEmailFormat)
+		LogErrorCode(nan.ErrPbWithEmailFormat)
 	}
 }

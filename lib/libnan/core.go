@@ -112,20 +112,23 @@ func LogError(_str string, _args ...interface{}) {
 	}
 }
 
-//
-
-type ProcedureStruct struct {
-	Result error
+func LogErrorCode(pError *Error) *Error {
+	_log("ERROR", pError.Message)
+	return pError
 }
 
-func (o ProcedureStruct) GetResult() error {
+type ProcedureStruct struct {
+	Result *Error
+}
+
+func (o ProcedureStruct) GetResult() *Error {
 	return o.Result
 }
 
 type Procedure interface {
-	Do()
-	GetResult() error
-	Undo()
+	Do() *Error
+	GetResult() *Error
+	Undo() *Error
 }
 
 func UndoIfFailed(proc Procedure) {

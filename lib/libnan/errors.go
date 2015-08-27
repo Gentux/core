@@ -13,7 +13,7 @@ const ()
 // TYPES
 // ===================================================================================================
 
-type ExitCode struct {
+type Error struct {
 	Code    int
 	Message string
 	Details string
@@ -21,8 +21,8 @@ type ExitCode struct {
 	jsonBytes []byte `json:"-"`
 }
 
-func NewExitCode(_code int, _msg string) *ExitCode {
-	p := &ExitCode{Code: _code, Message: _msg}
+func NewExitCode(_code int, _msg string) *Error {
+	p := &Error{Code: _code, Message: _msg}
 
 	jsonBytes, err := json.Marshal(p)
 	if err != nil {
@@ -35,23 +35,23 @@ func NewExitCode(_code int, _msg string) *ExitCode {
 	return p
 }
 
-func (o ExitCode) Ok() bool {
+func (o Error) Ok() bool {
 	return o.Code == 1
 }
 
-func (o ExitCode) Failed() bool {
+func (o Error) Failed() bool {
 	return o.Code != 1
 }
 
-func (p *ExitCode) ToJson() string {
+func (p *Error) ToJson() string {
 	return string(p.jsonBytes)
 }
 
-func (p *ExitCode) ToString() string {
+func (p *Error) ToString() string {
 	return p.Message
 }
 
-func (p *ExitCode) Unmarshal(s string) bool {
+func (p *Error) Unmarshal(s string) bool {
 	if err := json.Unmarshal([]byte(s), p); err != nil {
 		LogError("Failed to unmarshal exit code from string: %s", s)
 		return false
@@ -59,23 +59,33 @@ func (p *ExitCode) Unmarshal(s string) bool {
 	return true
 }
 
-func ExitOk(_pExitCode *ExitCode) {
+func PrintErrorJson(_pError *Error) {
+	fmt.Println(_pError.ToJson())
+}
+
+func PrintOk(_pExitCode *Error) {
+	Log(_pExitCode.Message)
+	fmt.Println(_pExitCode.ToJson())
+}
+
+func ExitOk(_pExitCode *Error) {
 	Log(_pExitCode.Message)
 	fmt.Println(_pExitCode.ToJson())
 
 	os.Exit(0)
 }
 
-func PrintOk(_pExitCode *ExitCode) {
-	Log(_pExitCode.Message)
-	fmt.Println(_pExitCode.ToJson())
-}
-
-func ExitError(_pExitCode *ExitCode) {
+func ExitError(_pExitCode *Error) {
 	LogError(_pExitCode.Message)
 	fmt.Println(_pExitCode.ToJson())
 
 	os.Exit(-1)
+}
+
+func Errorf(_msg string, _args ...interface{}) *Error {
+	msg := fmt.Sprintf(_msg, _args...)
+
+	return &Error{Code: 0, Message: msg}
 }
 
 func ExitErrorf(_code int, _msg string, _args ...interface{}) {
@@ -83,7 +93,7 @@ func ExitErrorf(_code int, _msg string, _args ...interface{}) {
 
 	LogError(msg)
 
-	p := &ExitCode{Code: _code, Message: msg}
+	p := &Error{Code: _code, Message: msg}
 
 	jsonBytes, err := json.Marshal(p)
 	if err != nil {

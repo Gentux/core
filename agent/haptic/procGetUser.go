@@ -53,14 +53,18 @@ func CheckAccount(p CheckFullAccountParams) {
 	// Refuse check if user account not registered
 	bRegistered, err := g_Db.IsUserRegistered(G_Account.Email)
 	if err != nil {
-		ExitError(ErrIssueWithAccountsDb)
+		LogErrorCode(ErrIssueWithAccountsDb)
+		return
 	} else if !bRegistered {
-		ExitError(ErrAccountDoesNotExist)
+		LogErrorCode(ErrAccountDoesNotExist)
+		return
 	}
 
 	// Refuse check if user account not activated
 	if active, err := g_Db.IsUserActivated(G_Account.Email); err != nil {
-		ExitError(ErrIssueWithAccountsDb)
+		LogErrorCode(ErrIssueWithAccountsDb)
+		return
+
 	} else if !active {
 
 		// TODO insert here checking of application specific resources, eg. CheckConsulAgent()
@@ -84,6 +88,6 @@ func ValidateCheckAccountParams() {
 	nan.Debug("Verifying parameters to check account for: %s", G_Account.Email)
 
 	if !nan.ValidEmail(G_Account.Email) {
-		ExitError(nan.ErrPbWithEmailFormat)
+		LogErrorCode(nan.ErrPbWithEmailFormat)
 	}
 }

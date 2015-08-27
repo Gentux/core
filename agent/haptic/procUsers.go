@@ -28,28 +28,28 @@ type AccountParams struct {
 // ========================================================================================================================
 
 // Procedure [NOSIDEEFFECT] Check preconditions for valid/compliant account creation parameters
-func ValidateCreateUserParams() {
+func ValidateCreateUserParams() *nan.Error {
 
 	Log("Verifying parameters to create %s account", G_Account.Email)
 
 	if !nan.ValidName(G_Account.FirstName) {
-		ExitError(ErrFirstnameNonCompliant)
+		return LogErrorCode(ErrFirstnameNonCompliant)
 	}
 
 	if !nan.ValidName(G_Account.LastName) {
-		ExitError(ErrLastnameNonCompliant)
+		return LogErrorCode(ErrLastnameNonCompliant)
 	}
 
 	if !nan.ValidEmail(G_Account.Email) {
-		ExitError(nan.ErrPbWithEmailFormat)
+		return LogErrorCode(nan.ErrPbWithEmailFormat)
 	}
 
 	if !nan.ValidPassword(G_Account.Password) {
-		ExitError(nan.ErrPasswordNonCompliant)
+		return LogErrorCode(nan.ErrPasswordNonCompliant)
 	}
 
 	if nan.DryRun || nan.ModeRef {
-		return
+		return nil
 	}
 
 	//TODO OPTionalize this
@@ -61,6 +61,8 @@ func ValidateCreateUserParams() {
 	// if httpErr != nil || resp.StatusCode != 200 {
 	// 	ExitError(ErrInvalidLicenseFile)
 	// }
+
+	return nil
 }
 
 // ========================================================================================================================
@@ -70,15 +72,13 @@ func ValidateCreateUserParams() {
 // - Check Params
 // - Register TAC user : insert record in db guacamode/talend_tac
 // ========================================================================================================================
-func RegisterUser(p AccountParams) {
+func RegisterUser(p AccountParams) *nan.Error {
 
 	G_Account = p
 
-	//InitialiseDb()
-	//[OPT] was done for Talend single executables
-	//defer ShutdownDb()
-
-	ValidateCreateUserParams()
+	if err := ValidateCreateUserParams(); err != nil {
+		return err
+	}
 
 	Log("STARTING registerUser for: %s", G_Account.Email)
 
@@ -90,16 +90,16 @@ func RegisterUser(p AccountParams) {
 
 	numReg, err := g_Db.CountRegisteredUsers()
 	if err != nil {
-		ExitError(ErrIssueWithAccountsDb)
+		return LogErrorCode(ErrIssueWithAccountsDb)
 	} else if numReg >= nan.Config().Proxy.MaxNumRegistrations {
-		ExitError(ErrMaxNumAccountsRegistered)
+		return LogErrorCode(ErrMaxNumAccountsRegistered)
 	}
 
 	bRegistered, err := g_Db.IsUserRegistered(G_Account.Email)
 	if err != nil {
-		ExitError(ErrIssueWithAccountsDb)
+		return LogErrorCode(ErrIssueWithAccountsDb)
 	} else if bRegistered {
-		ExitError(ErrAccountExists)
+		return LogErrorCode(ErrAccountExists)
 	}
 
 	G_ProcRegisterProxyUser.sam = "unactivated"
@@ -115,11 +115,13 @@ func RegisterUser(p AccountParams) {
 
 		if err := ioutil.WriteFile(sUserParamsFilePath, []byte(sUserAccountParams), 0777); err != nil {
 			LogError("Failed to save user account params into workspace file : %s", sUserParamsFilePath)
+			return nan.ErrSomethingWrong
 		}
 	}
 
 	//TODO ExitOk : make this behaviour configurable : exit or just print
 	nan.PrintOk(OkAccountBeingCreated)
+	return nil
 }
 
 // ========================================================================================================================
@@ -128,36 +130,39 @@ func RegisterUser(p AccountParams) {
 // Does:
 // - Return list of users
 // ========================================================================================================================
-func ListUsers() []string {
+func ListUserEmails() ([]string, *nan.Error) {
 
-	var (
-		user_id  int
-		username string
-		users    []string
-	)
+	var userNames []string
 
 	rows, err := g_Db.Query("select user_id, username from guacamole_user")
 	if err != nil {
-		ExitError(ErrIssueWithAccountsDb)
+		return nil, LogErrorCode(ErrIssueWithAccountsDb)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		err := rows.Scan(&user_id, &username)
+		var userId, userName string
+		err := rows.Scan(&userId, &userName)
 		if err != nil {
-			ExitError(ErrIssueWithDbResult)
+			return nil, LogErrorCode(ErrIssueWithDbResult)
+		} else if userName != "guacadmin" {
+			userNames = append(userNames, userName)
 		}
-		users = append(users, username)
 	}
 	err = rows.Err()
 	if err != nil {
-		ExitError(ErrIssueWithDbResult)
+		return nil, LogErrorCode(ErrIssueWithDbResult)
 	}
-	return users
+
+	return userNames, nil
 }
 
 // Returns FirstName LastName Email Password License
-func GetUserAccountParamsForActivation(_Email string) (string, string, string, string, string) {
+func GetUserAccountParamsForActivation(_Email string) (string, string, string, string, string, *nan.Error) {
+
+	var FirstName, LastName, tmpEmail, Password, License string
+
+	var retCode *nan.Error = nil
 
 	// Reload user account params from workspace
 	sUserParamsFilePath := fmt.Sprintf("%s/studio/%s/account_params", nan.Config().CommonBaseDir, _Email)
@@ -166,20 +171,21 @@ func GetUserAccountParamsForActivation(_Email string) (string, string, string, s
 	var bytesRead []byte
 
 	if bytesRead, err = ioutil.ReadFile(sUserParamsFilePath); err != nil {
-		nan.ExitErrorf(0, "Failed to read user account params from workspace file : %s", sUserParamsFilePath)
+		retCode = nan.Errorf("Failed to read user account params from workspace file : <%s> with error : %s",
+			sUserParamsFilePath,
+			err.Error())
+	} else {
+
+		nItemsParsed, err := fmt.Sscanf(string(bytesRead), "%s\n%s\n%s\n%s\n%s",
+			&FirstName, &LastName, &tmpEmail, &Password, &License)
+
+		if err != nil || nItemsParsed != 5 {
+			retCode = nan.Errorf("Failed to parse user account params from workspace file : %s, read %d items with error:",
+				sUserParamsFilePath, nItemsParsed, err.Error())
+		}
 	}
 
-	var FirstName, LastName, tmpEmail, Password, License string
-
-	nItemsParsed, err := fmt.Sscanf(string(bytesRead), "%s\n%s\n%s\n%s\n%s",
-		&FirstName, &LastName, &tmpEmail, &Password, &License)
-
-	if err != nil || nItemsParsed != 5 {
-		nan.ExitErrorf(0, "Failed to parse user account params from workspace file : %s, read %d items",
-			sUserParamsFilePath, nItemsParsed)
-	}
-
-	return FirstName, LastName, tmpEmail, Password, License
+	return FirstName, LastName, tmpEmail, Password, License, retCode
 }
 
 // ========================================================================================================================
@@ -189,7 +195,8 @@ func GetUserAccountParamsForActivation(_Email string) (string, string, string, s
 // - Check Params
 // - Register TAC user : insert record in db guacamode/talend_tac
 // ========================================================================================================================
-func ActivateUser(p AccountParams) {
+func ActivateUser(p AccountParams) *nan.Error {
+	var retCode *nan.Error
 
 	G_Account = p
 
@@ -198,7 +205,7 @@ func ActivateUser(p AccountParams) {
 	//defer ShutdownDb()
 
 	if !nan.ValidEmail(G_Account.Email) {
-		ExitError(nan.ErrPbWithEmailFormat)
+		return LogErrorCode(nan.ErrPbWithEmailFormat)
 	}
 
 	Log("STARTING activateUser for: %s", G_Account.Email)
@@ -208,28 +215,32 @@ func ActivateUser(p AccountParams) {
 	if maxNumAccounts := nan.Config().Proxy.MaxNumAccounts; maxNumAccounts > 0 {
 
 		if nAccounts, err := g_Db.CountActiveUsers(); err != nil {
-			ExitError(ErrIssueWithAccountsDb)
+			return LogErrorCode(ErrIssueWithAccountsDb)
 		} else if nAccounts >= maxNumAccounts {
-			ExitError(ErrMaxNumAccountsReached)
+			return LogErrorCode(ErrMaxNumAccountsReached)
 		}
 	}
 
 	// User not registered yet ?
 
 	if bRegistered, err := g_Db.IsUserRegistered(G_Account.Email); err != nil {
-		ExitError(ErrIssueWithAccountsDb)
+		return LogErrorCode(ErrIssueWithAccountsDb)
 	} else if !bRegistered {
-		ExitError(ErrAccountNotRegistered)
+		return LogErrorCode(ErrAccountNotRegistered)
 	}
 
 	// If user already activated then do nothing
 	if bValue, _ := g_Db.IsUserActivated(G_Account.Email); bValue {
-		ExitOk(ErrAccountActivated)
+		return LogErrorCode(ErrAccountActivated)
 	}
 
 	tmpEmail := ""
-	G_Account.FirstName, G_Account.LastName, tmpEmail, G_Account.Password, G_Account.License =
+	G_Account.FirstName, G_Account.LastName, tmpEmail, G_Account.Password, G_Account.License, retCode =
 		GetUserAccountParamsForActivation(G_Account.Email)
+
+	if retCode != nil {
+		return nan.LogErrorCode(retCode)
+	}
 
 	if G_Account.Email != tmpEmail {
 		LogError("[INCONSISTENCY] Email passed as parameter (%s) doesn't match email loaded in account params: %s",
@@ -245,12 +256,12 @@ func ActivateUser(p AccountParams) {
 	G_ProcCreateWinUser.Do()
 
 	if G_ProcCreateWinUser.out.sam == "" {
-		ExitError(ErrIssueWithTacProvisioning)
+		return LogErrorCode(ErrIssueWithTacProvisioning)
 	}
 
 	g_Db.UpdateConnectionUserNameForEmail(G_Account.Email, G_ProcCreateWinUser.out.sam)
 
-	ExitOk(OkAccountBeingActivated)
+	return OkAccountBeingActivated
 }
 
 // ====================================================================================================
@@ -289,7 +300,7 @@ func CreateUserWorkspaceDir() bool {
 	return true
 }
 
-func TestWinExe(sam string) {
+func TestWinExe(sam string) *nan.Error {
 
 	sWindowsServerSecurityFile := fmt.Sprintf(`\\winad.intra.nanocloud.com\NETLOGON\%s.setSecurity.bat`, sam)
 	nan.Debug("Invoking WinExe on file:" + sWindowsServerSecurityFile)
@@ -300,34 +311,36 @@ func TestWinExe(sam string) {
 
 	if out, err := cmd.Output(); err != nil {
 		Log("Error <%s> returned by WinExe when running file <%s> with output: <%s>", err, sWindowsServerSecurityFile, out)
-		ExitError(nan.ErrSomethingWrong)
+		return LogErrorCode(nan.ErrSomethingWrong)
 	}
+
+	return nil
 }
 
-func (p *ProcCreateWinUser) Do() {
+func (p *ProcCreateWinUser) Do() *nan.Error {
 
 	var err error
 
 	if nan.DryRun || nan.ModeRef {
 		Log("Creating Windows user + LDAP declaration")
-		return
+		return nil
 	}
 
 	// TODO: Remove these check, redundant with earlier check ?
 	if !nan.ValidEmail(G_Account.Email) {
-		ExitError(nan.ErrPbWithEmailFormat)
+		return LogErrorCode(nan.ErrPbWithEmailFormat)
 	}
 
 	if !nan.ValidPassword(G_Account.Password) {
-		ExitError(nan.ErrPasswordNonCompliant)
+		return LogErrorCode(nan.ErrPasswordNonCompliant)
 	}
 
 	if !G_TwoStageActivation {
 		bRegistered, err := g_Db.IsUserRegistered(G_Account.Email)
 		if err != nil {
-			ExitError(ErrIssueWithAccountsDb)
+			return LogErrorCode(ErrIssueWithAccountsDb)
 		} else if bRegistered {
-			ExitError(ErrAccountExists)
+			return LogErrorCode(ErrAccountExists)
 		}
 	}
 
@@ -353,7 +366,12 @@ func (p *ProcCreateWinUser) Do() {
 	params = fmt.Sprintf(`{ "UserEmail" : "%s", "password" : "%s" }`, G_Account.Email, G_Account.Password)
 
 	for idx := 0; idx < 3; idx++ {
-		g_PluginLdap.Call("Ldap.AddUser", params, &resp)
+
+		if err := g_PluginLdap.Call("Ldap.AddUser", params, &resp); err != nil {
+			LogError("Failed to contact plugin with error %s", err.Error())
+		}
+
+		//TODO add wait time
 
 		if resp[0] != '$' {
 			LogError("Failed to add LDAP user, got output: <%s>. Retrying for user <%s> and password <%s>", resp, G_Account.Email, G_Account.Password)
@@ -432,7 +450,7 @@ func (p *ProcCreateWinUser) Do() {
 
 	if err = exec.Command("/usr/bin/scp", samFilePath, "Administrator@10.20.12.20:/cygdrive/c/Windows/SYSVOL/domain/scripts/").Run(); err != nil {
 		Log("Error when attempting to scp file: %s on server", samFilePath)
-		ExitError(nan.ErrSomethingWrong)
+		return LogErrorCode(nan.ErrSomethingWrong)
 	}
 
 	// Setup, upload and execute the security script on Windows Server
@@ -458,7 +476,7 @@ func (p *ProcCreateWinUser) Do() {
 	if err = exec.Command("/usr/bin/scp", sUserSecurityScriptPath,
 		"Administrator@10.20.12.20:/cygdrive/c/Windows/SYSVOL/domain/scripts/").Run(); err != nil {
 		Log("Error when attempting to scp file: %s on server", sUserSecurityScriptPath)
-		ExitError(nan.ErrSomethingWrong)
+		return LogErrorCode(nan.ErrSomethingWrong)
 	}
 
 	// Execute then delete security setup script on Windows Server
@@ -477,7 +495,7 @@ func (p *ProcCreateWinUser) Do() {
 			sWindowsServerSecurityFile)
 		if out, err := cmd.Output(); err != nil {
 			Log("Error <%s> returned by WinExe when running file <%s> with output: <%s>", err, sWindowsServerSecurityFile, out)
-			ExitError(nan.ErrSomethingWrong)
+			return nan.ErrSomethingWrong
 		}
 
 		// TODO add timeout + retry on this call + message: did not respond in a timely manner
@@ -489,23 +507,21 @@ func (p *ProcCreateWinUser) Do() {
 
 		if out, err := cmd.Output(); err != nil {
 			Log("Error code %s returned by WinExe when running file : %s with output: %s", err, sWindowsServerSecurityFile, out)
-			ExitError(nan.ErrSomethingWrong)
+			return nan.ErrSomethingWrong
 		}
 	}
 
-	p.Result = nil
+	return nil
 }
 
-func (p *ProcCreateWinUser) Undo() {
-
-	p.Result = nil
+func (p *ProcCreateWinUser) Undo() *nan.Error {
 
 	// Refuse deletion if user account doesn't exist
 	bRegistered, err := g_Db.IsUserRegistered(G_Account.Email)
 	if err != nil {
-		ExitError(ErrIssueWithAccountsDb)
+		return LogErrorCode(ErrIssueWithAccountsDb)
 	} else if !bRegistered {
-		Log("Email address not listed in accounts database")
+		Log("Email address not listed in accounts database: %s", G_Account.Email)
 	}
 
 	params := fmt.Sprintf(`{ "UserEmail" : "%s" }`, G_Account.Email)
@@ -517,14 +533,14 @@ func (p *ProcCreateWinUser) Undo() {
 	}
 	sam, e := g_Db.GetSamFromEmail(G_Account.Email)
 	if e != nil {
-		ExitError(ErrIssueWithAccountsDb)
+		return LogErrorCode(ErrIssueWithAccountsDb)
 	}
 
 	sam = strings.Trim(sam, " ")
 
 	if sam == "" || sam == "unactivated" {
 		LogError("Email ok but found no matching SAM user")
-		return
+		return nan.ErrSomethingWrong
 	}
 
 	// Delete Talend Studio instance : logoff user and remove user profile
@@ -595,7 +611,10 @@ func (p *ProcCreateWinUser) Undo() {
 	workspaceDir := fmt.Sprintf("%s/studio/%s", nan.Config().CommonBaseDir, G_Account.Email)
 	if err := os.Remove(workspaceDir); err != nil {
 		LogError("Error when deleting directory: %s, err: %s", workspaceDir, err)
+		return nan.ErrSomethingWrong
 	}
+
+	return nil
 }
 
 // ====================================================================================================
@@ -608,11 +627,11 @@ type ProcRegisterProxyUser struct {
 	sam string
 }
 
-func (p *ProcRegisterProxyUser) Do() {
+func (p *ProcRegisterProxyUser) Do() *nan.Error {
 
 	if nan.DryRun || nan.ModeRef {
 		Log("DRYRUN: Registring user in guacamole database")
-		return
+		return nil
 	}
 
 	// uid := uuid.New()
@@ -639,7 +658,7 @@ func (p *ProcRegisterProxyUser) Do() {
 
 	if _, err := g_Db.Exec("SET @salt = UNHEX(SHA2(UUID(), 256))"); err != nil {
 		LogError("Failed to compute salt")
-		ExitError(nan.ErrSomethingWrong)
+		return nan.ErrSomethingWrong
 	}
 
 	sInsertUserPassword := fmt.Sprintf(`INSERT INTO guacamole_user(username, password_salt, password_hash) 
@@ -647,7 +666,7 @@ func (p *ProcRegisterProxyUser) Do() {
 
 	if _, err := g_Db.Exec(sInsertUserPassword); err != nil {
 		LogError("Failed to insert user data into guacamole_user, error: %s", err)
-		ExitError(nan.ErrSomethingWrong)
+		return nan.ErrSomethingWrong
 	}
 
 	// guacamole_connection_group
@@ -656,7 +675,7 @@ func (p *ProcRegisterProxyUser) Do() {
 
 	if _, err := g_Db.Exec(sRequest); err != nil {
 		LogError("Failed to insert user data into guacamole_connection_group, error: %s", err)
-		ExitError(nan.ErrSomethingWrong)
+		return nan.ErrSomethingWrong
 	}
 
 	// Retrieve group ID
@@ -666,7 +685,7 @@ func (p *ProcRegisterProxyUser) Do() {
 	rows, err := g_Db.Query(sQuery)
 	if err != nil {
 		LogError("Failed to select connection_group_id for user %s, error: %s", G_Account.Email, err)
-		ExitError(nan.ErrSomethingWrong)
+		return nan.ErrSomethingWrong
 	}
 
 	groupId := ""
@@ -674,7 +693,7 @@ func (p *ProcRegisterProxyUser) Do() {
 	for rows.Next() {
 		if err = rows.Scan(&groupId); err != nil {
 			LogError("Failed to parse result of query on connection_group_id for user %s, error: %s", G_Account.Email, err)
-			ExitError(nan.ErrSomethingWrong)
+			return nan.ErrSomethingWrong
 		}
 	}
 
@@ -685,13 +704,13 @@ func (p *ProcRegisterProxyUser) Do() {
 	rows, err = g_Db.Query(sQuery)
 	if err != nil {
 		LogError("Failed to select user_id for user %s, error: %s", G_Account.Email, err)
-		ExitError(nan.ErrSomethingWrong)
+		return nan.ErrSomethingWrong
 	}
 
 	for rows.Next() {
 		if err = rows.Scan(&userId); err != nil {
 			LogError("Failed to parse result of query on connection_group_id for user %s, error: %s", G_Account.Email, err)
-			ExitError(nan.ErrSomethingWrong)
+			return nan.ErrSomethingWrong
 		}
 	}
 
@@ -704,7 +723,7 @@ func (p *ProcRegisterProxyUser) Do() {
 
 	if _, err = g_Db.Exec(sRequest); err != nil {
 		LogError("Failed to insert record into guacamole_connection_group_permission, error : %s", err)
-		ExitError(nan.ErrSomethingWrong)
+		return nan.ErrSomethingWrong
 	}
 
 	//TODO OPTIONAL (was done for Talend)
@@ -719,12 +738,12 @@ func (p *ProcRegisterProxyUser) Do() {
 
 	if result, err := g_Db.Exec(sRequest); err != nil {
 		LogError("Failed to insert record into guacamole_connection, error : %s", err)
-		ExitError(nan.ErrSomethingWrong)
+		return nan.ErrSomethingWrong
 	} else {
 		var err error
 		if connId, err = result.LastInsertId(); err != nil {
 			LogError("Failed to get LastInsert from query on guacamole_connection, error : %s", err)
-			ExitError(nan.ErrSomethingWrong)
+			return nan.ErrSomethingWrong
 		}
 	}
 
@@ -743,7 +762,7 @@ func (p *ProcRegisterProxyUser) Do() {
 	for _, requestStr := range insertRequests {
 		if _, err = g_Db.Exec(requestStr); err != nil {
 			LogError("Failed to execute query: [%s], error: %s", requestStr, err)
-			nan.ExitError(nan.ErrSomethingWrong)
+			return nan.ErrSomethingWrong
 		}
 	}
 
@@ -756,14 +775,14 @@ func (p *ProcRegisterProxyUser) Do() {
 
 	if _, err := g_Db.Exec(sRequest); err != nil {
 		LogError("Failed to insert record into guacamole_connection_permission, error : %s", err)
-		ExitError(nan.ErrSomethingWrong)
+		return nan.ErrSomethingWrong
 	}
 
-	p.Result = nil
+	return nil
 }
 
 // 	Remove Guacamole user
-func (p *ProcRegisterProxyUser) Undo() {
+func (p *ProcRegisterProxyUser) Undo() *nan.Error {
 
 	ok := true
 
@@ -800,6 +819,8 @@ WHERE username = '%s'`, G_Account.Email)
 	}
 
 	if !ok {
-		ExitError(ErrIssueWithAccountsDb)
+		return LogErrorCode(ErrIssueWithAccountsDb)
 	}
+
+	return nil
 }

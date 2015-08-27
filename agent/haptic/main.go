@@ -42,10 +42,11 @@ var (
 	g_PluginOwncloud *pingo.Plugin
 
 	// Aliases useful for this package so that we don't have to have to prefix them with nan all the time
-	ExitOk    = nan.ExitOk
-	ExitError = nan.ExitError
-	Log       = nan.Log
-	LogError  = nan.LogError
+	ExitOk       = nan.ExitOk
+	ExitError    = nan.ExitError
+	Log          = nan.Log
+	LogError     = nan.LogError
+	LogErrorCode = nan.LogErrorCode
 )
 
 // TODO remove hardcoded : intra.nanocloud.com/Administrator%password", "//10.20.12.10
@@ -68,7 +69,8 @@ func main() {
 	case "registeruser":
 		adapter.RegisterUser(os.Args[2], os.Args[3], os.Args[4], os.Args[5])
 	case "activateuser":
-		adapter.ActivateUser(os.Args[2])
+		nan.PrintErrorJson(adapter.ActivateUser(os.Args[2]))
+		os.Exit(0)
 	case "deleteuser":
 		adapter.DeleteUser(os.Args[2])
 	case "changepassword":
@@ -84,13 +86,13 @@ func SetupPlugins() {
 	// LDAP
 	g_PluginLdap = pingo.NewPlugin("tcp", nan.Config().CommonBaseDir+"/plugins/ldap/ldap")
 	if g_PluginLdap == nil {
-		nan.ExitErrorf(0, "Failed to start plugin Ldap")
+		nan.LogError("Failed to start plugin Ldap")
 	}
 
 	// Owncloud
 	g_PluginOwncloud = pingo.NewPlugin("tcp", nan.Config().CommonBaseDir+"/plugins/owncloud/owncloud")
 	if g_PluginOwncloud == nil {
-		nan.ExitErrorf(0, "Failed to start plugin Owncloud")
+		nan.LogError("Failed to start plugin Owncloud")
 	}
 
 	Log("Start plugin Ldap")

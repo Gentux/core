@@ -15,7 +15,7 @@ func ImpLdapForceDisableAccount(_Email string) string {
 	sPhpScript := fmt.Sprintf("force_disable_LDAP_user.php")
 	cmd := exec.Command("/usr/bin/php", "-f", sPhpScript, "--", _Email)
 
-	ans := nan.ExitCode{}
+	ans := nan.Error{}
 
 	out, err := cmd.Output()
 
@@ -34,7 +34,7 @@ func ImpLdapDisableAccount(_Sam string) string {
 	sPhpScript := "disable_LDAP_user.php"
 	cmd := exec.Command("/usr/bin/php", "-f", sPhpScript, "--", _Sam)
 
-	ans := nan.ExitCode{}
+	ans := nan.Error{}
 
 	_, err := cmd.Output()
 	if err != nil {

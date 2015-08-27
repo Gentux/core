@@ -42,7 +42,10 @@ func ListRegisteredUsers() {
 	defer ShutdownDb()
 
 	var regUsersInfo []RegisteredUserInfo
-	g_Db.GetRegisteredUsersInfo(&regUsersInfo)
+
+	if !g_Db.GetRegisteredUsersInfo(&regUsersInfo) {
+		return
+	}
 
 	sResult := `{"fields":["user_id","registration_date","activated"],"data":[`
 	for idx, regInfo := range regUsersInfo {
@@ -71,10 +74,13 @@ func ListActiveUsers() {
 	defer ShutdownDb()
 
 	var activeTacUsersInfo []ActiveTacUserInfo
-	g_Db.GetActivatedUsersInfo(&activeTacUsersInfo)
 
-	for _, v := range activeTacUsersInfo {
-		fmt.Println(v)
+	if g_Db.GetActivatedUsersInfo(&activeTacUsersInfo) {
+
+		for _, v := range activeTacUsersInfo {
+			fmt.Println(v)
+		}
+
 	}
 
 }
