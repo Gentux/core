@@ -15,7 +15,9 @@ type NoArgs struct {
 }
 
 type DefaultReply struct {
-	Result bool
+	Result  bool
+	Code    int
+	Message string
 }
 
 func StaticHandler(w http.ResponseWriter, pRequest *http.Request) {
