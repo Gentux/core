@@ -53,11 +53,9 @@ func (o adapter_t) UpdateUserEmail(_PrevEmail, _NewEmail string) error {
 	return nil
 }
 
-func (o adapter_t) UpdateUserPassword(_Email, _Password string) error {
+func (o adapter_t) UpdateUserPassword(_Email, _Password string) *nan.Error {
 
-	fmt.Println("TODO UpdateUserPassword")
-
-	return nil
+	return UpdateUserPassword(_Email, _Password)
 }
 
 func (o adapter_t) DeleteUser(_Email string) error {

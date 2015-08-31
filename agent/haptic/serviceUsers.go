@@ -109,7 +109,14 @@ type UpdatePasswordParam struct {
 
 func (p *ServiceUsers) UpdateUserPassword(r *http.Request, args *UpdatePasswordParam, reply *DefaultReply) error {
 
-	adapter.UpdateUserPassword(args.Email, args.Password)
+	err := adapter.UpdateUserPassword(args.Email, args.Password)
+	if err != nil {
+		reply.Result = false
+		reply.Code = err.Code
+		reply.Message = err.Message
+	} else {
+		reply.Result = true
+	}
 
 	return nil
 }

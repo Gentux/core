@@ -619,6 +619,20 @@ func (p *ProcCreateWinUser) Undo() *nan.Error {
 }
 
 // ====================================================================================================
+// Procedure: UpdateUserPassword
+// =>
+// ====================================================================================================
+func UpdateUserPassword(email string, password string) *nan.Error {
+
+	cmd := exec.Command(filepath.Join(nan.Config().CommonBaseDir, "userPassword.sh"), email, password)
+	if out, err := cmd.Output(); err != nil {
+		nan.LogError("Error %s returned by userPassword script: %s", err, out)
+		return nan.ErrPasswordNotUpdated
+	}
+	return nil
+}
+
+// ====================================================================================================
 // Procedure: RegisterProxyUser
 // =>
 // ====================================================================================================

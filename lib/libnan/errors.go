@@ -116,6 +116,7 @@ var (
 	ErrOpFailed             = NewExitCode(4, "Operation failed: resource is not in the state required to perform the operation")
 	ErrPbWithEmailFormat    = NewExitCode(2, "Problem with email format")
 	ErrPasswordNonCompliant = NewExitCode(3, "The password does not respect the security policy")
+	ErrPasswordNotUpdated   = NewExitCode(5, "Update password failed")
 	ErrFilesystemError      = NewExitCode(16, "Filesystem error : failed to create/delete file/directory")
 	ErrSystemError          = NewExitCode(17, "System error")
 	ErrConfigError          = NewExitCode(18, "Error in configuration file")
