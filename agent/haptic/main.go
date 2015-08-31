@@ -85,8 +85,9 @@ func main() {
 		params := fmt.Sprintf(`{ "username" : "%s" }`, os.Args[2])
 		g_PluginOwncloud.Call("Owncloud.DeleteUser", params, &resp)
 
-	case "changepassword":
-		//TODO
+	case "changeuserpassword":
+		adapter.UpdateUserPassword(os.Args[2], os.Args[3])
+
 	case "serve":
 		RunServer()
 	}
