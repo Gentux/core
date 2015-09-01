@@ -68,7 +68,7 @@ func (o adapter_t) DeleteUser(_Email string) error {
 	return nil
 }
 
-func (o adapter_t) GetApplications() (string, error) {
+func (o adapter_t) GetApplications() ([]Connection, error) {
 
 	return ListApplications(), nil
 }

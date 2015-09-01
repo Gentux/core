@@ -37,10 +37,12 @@ type ProxyConfig_t struct {
 }
 
 type AppServerConfig_t struct {
-	User     string
-	Server   string
-	Port     int
-	Password string
+	User                 string
+	Server               string
+	SSHPort              int
+	RDPPort              int
+	Password             string
+	XMLConfigurationFile string
 }
 
 type Config_t struct {

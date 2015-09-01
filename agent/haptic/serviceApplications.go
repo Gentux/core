@@ -10,13 +10,13 @@ type ServiceApplications struct {
 }
 
 type GetApplicationsListReply struct {
-	ApplicationsJsonArray string
+	Applications []Connection
 }
 
 func (p *ServiceApplications) GetList(r *http.Request, args *NoArgs, reply *GetApplicationsListReply) error {
 
-	applicationsJson, _ := adapter.GetApplications()
-	reply.ApplicationsJsonArray = applicationsJson
+	connections, _ := adapter.GetApplications()
+	reply.Applications = connections
 
 	return nil
 }
@@ -56,7 +56,6 @@ type UnpublishApplicationParam struct {
 }
 
 func (p *ServiceApplications) UnpublishApplication(r *http.Request, args *UnpublishApplicationParam, reply *DefaultReply) error {
-
 
 	adapter.UnpublishApp(args.ApplicationName)
 	reply.Result = true

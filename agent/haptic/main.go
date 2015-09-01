@@ -21,6 +21,7 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 
 	nan "nanocloud.com/zeroinstall/lib/libnan"
 
