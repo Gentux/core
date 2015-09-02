@@ -75,6 +75,11 @@ func (o adapter_t) GetApplications() ([]Connection, error) {
 	return ListApplications(), nil
 }
 
+func (o adapter_t) GetApplicationsForSamAccount(sam string) ([]Connection, error) {
+
+	return ListApplicationsForSamAccount(sam), nil
+}
+
 func (o adapter_t) UnpublishApp(Alias string) error {
 
 	UnpublishApplication(Alias)

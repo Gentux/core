@@ -21,6 +21,18 @@ func (p *ServiceApplications) GetList(r *http.Request, args *NoArgs, reply *GetA
 	return nil
 }
 
+type SamAccountParam struct {
+	Sam string
+}
+
+func (p *ServiceApplications) GetListForSamAccount(r *http.Request, args *SamAccountParam, reply *GetApplicationsListReply) error {
+
+	connections, _ := adapter.GetApplicationsForSamAccount(args.Sam)
+	reply.Applications = connections
+
+	return nil
+}
+
 // ====================================================================================================
 
 func (p *ServiceApplications) GetApplication(r *http.Request, args *NoArgs, reply *DefaultReply) error {

@@ -206,6 +206,57 @@ func ListApplications() []Connection {
 }
 
 // ========================================================================================================================
+// Procedure: ListApplicationsForSamAccount
+//
+// Does:
+// - Return list of applications available for a particular SAM account
+// ========================================================================================================================
+func ListApplicationsForSamAccount(sam string) []Connection {
+
+	var (
+		guacamoleConfigs GuacamoleXMLConfigs
+		connections      []Connection
+		bytesRead        []byte
+		err              error
+	)
+
+	if bytesRead, err = ioutil.ReadFile(nan.Config().AppServer.XMLConfigurationFile); err != nil {
+		LogError("Failed to read connections params : %s", err)
+	}
+
+	err = xml.Unmarshal(bytesRead, &guacamoleConfigs)
+	if err != nil {
+		fmt.Printf("error: %v", err)
+		return nil
+	}
+
+	for _, config := range guacamoleConfigs.Config {
+		var connection Connection
+
+		for _, param := range config.Params {
+			switch true {
+			case param.ParamName == "hostname":
+				connection.Hostname = param.ParamValue
+			case param.ParamName == "port":
+				connection.Port = param.ParamValue
+			case param.ParamName == "username":
+				connection.Username = param.ParamValue
+			case param.ParamName == "password":
+				connection.Password = param.ParamValue
+			case param.ParamName == "remote-app":
+				connection.RemoteApp = param.ParamValue
+			}
+		}
+
+		if connection.Username == sam {
+			connections = append(connections, connection)
+		}
+	}
+
+	return connections
+}
+
+// ========================================================================================================================
 // Procedure: UnpublishApplication
 //
 // Does:
