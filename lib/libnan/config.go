@@ -42,6 +42,7 @@ type AppServerConfig_t struct {
 	SSHPort              int
 	RDPPort              int
 	Password             string
+	WindowsDomain        string
 	XMLConfigurationFile string
 }
 
