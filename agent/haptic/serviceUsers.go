@@ -48,7 +48,12 @@ type RegisterUserParam struct {
 
 func (p *ServiceUsers) RegisterUser(r *http.Request, args *RegisterUserParam, reply *DefaultReply) error {
 
-	adapter.RegisterUser(args.Firstname, args.Lastname, args.Email, args.Password)
+	err := adapter.RegisterUser(args.Firstname, args.Lastname, args.Email, args.Password)
+	if err != nil {
+		reply.Result = false
+	} else {
+		reply.Result = true
+	}
 
 	return nil
 }

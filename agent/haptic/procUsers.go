@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	nan "nanocloud.com/zeroinstall/lib/libnan"
 
@@ -106,7 +107,20 @@ func RegisterUser(accountParam AccountParams) {
 			CreationTime: "",
 		}
 		userJson []byte
+		resp     string
 	)
+
+	t := time.Now()
+	user.CreationTime = t.Format(time.RFC3339)
+
+	params := fmt.Sprintf(`{ "UserEmail" : "%s" }`, user.Email)
+	g_PluginLdap.Call("Ldap.ForceDisableAccount", params, &resp)
+	if resp == "0" {
+		LogError("Ldap.ForceDisableAccount failed")
+	}
+	Log("Configure Windows user profile")
+	params = fmt.Sprintf(`{ "UserEmail" : "%s", "password" : "%s" }`, user.Email, user.Password)
+	g_PluginLdap.Call("Ldap.AddUser", params, &user.Sam)
 
 	userJson, e := json.Marshal(user)
 	if e != nil {
