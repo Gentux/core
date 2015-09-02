@@ -31,11 +31,12 @@ type GuacamoleXMLParam struct {
 }
 
 type Connection struct {
-	Hostname  string `xml:"hostname"`
-	Port      string `xml:"port"`
-	Username  string `xml:"username"`
-	Password  string `xml:"password"`
-	RemoteApp string `xml:"remote-app"`
+	Hostname       string `xml:"hostname"`
+	Port           string `xml:"port"`
+	Username       string `xml:"username"`
+	Password       string `xml:"password"`
+	RemoteApp      string `xml:"remote-app"`
+	ConnectionName string
 }
 
 type ApplicationParams struct {
@@ -198,6 +199,7 @@ func ListApplications() []Connection {
 				connection.RemoteApp = param.ParamValue
 			}
 		}
+		connection.ConnectionName = config.Name
 
 		connections = append(connections, connection)
 	}
