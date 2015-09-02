@@ -84,34 +84,37 @@ func CreateConnections() error {
 		application.IconContents = []byte(base64.StdEncoding.EncodeToString(application.IconContents))
 	}
 
-	for _, application := range applications {
-		var config GuacamoleXMLConfig
+	users, _ := g_Db.GetUsers()
+	for _, user := range users {
+		for _, application := range applications {
+			var config GuacamoleXMLConfig
 
-		config.Name = application.Alias
-		config.Protocol = "rdp"
+			config.Name = fmt.Sprintf("%s_%s", application.Alias, user.Email)
+			config.Protocol = "rdp"
 
-		config.Params = append(config.Params, GuacamoleXMLParam{
-			ParamName:  "hostname",
-			ParamValue: nan.Config().AppServer.Server,
-		})
-		config.Params = append(config.Params, GuacamoleXMLParam{
-			ParamName:  "port",
-			ParamValue: strconv.Itoa(nan.Config().AppServer.RDPPort),
-		})
-		config.Params = append(config.Params, GuacamoleXMLParam{
-			ParamName:  "username",
-			ParamValue: nan.Config().AppServer.User,
-		})
-		config.Params = append(config.Params, GuacamoleXMLParam{
-			ParamName:  "password",
-			ParamValue: nan.Config().AppServer.Password,
-		})
-		config.Params = append(config.Params, GuacamoleXMLParam{
-			ParamName:  "remote-app",
-			ParamValue: fmt.Sprintf("||%s", application.Alias),
-		})
+			config.Params = append(config.Params, GuacamoleXMLParam{
+				ParamName:  "hostname",
+				ParamValue: nan.Config().AppServer.Server,
+			})
+			config.Params = append(config.Params, GuacamoleXMLParam{
+				ParamName:  "port",
+				ParamValue: strconv.Itoa(nan.Config().AppServer.RDPPort),
+			})
+			config.Params = append(config.Params, GuacamoleXMLParam{
+				ParamName:  "username",
+				ParamValue: fmt.Sprintf("%s@%s", user.Sam, nan.Config().AppServer.WindowsDomain),
+			})
+			config.Params = append(config.Params, GuacamoleXMLParam{
+				ParamName:  "password",
+				ParamValue: user.Password,
+			})
+			config.Params = append(config.Params, GuacamoleXMLParam{
+				ParamName:  "remote-app",
+				ParamValue: fmt.Sprintf("||%s", application.Alias),
+			})
 
-		connections.Config = append(connections.Config, config)
+			connections.Config = append(connections.Config, config)
+		}
 	}
 
 	var config GuacamoleXMLConfig
@@ -129,7 +132,7 @@ func CreateConnections() error {
 	})
 	config.Params = append(config.Params, GuacamoleXMLParam{
 		ParamName:  "username",
-		ParamValue: nan.Config().AppServer.User,
+		ParamValue: fmt.Sprintf("%s@%s", nan.Config().AppServer.User, nan.Config().AppServer.WindowsDomain),
 	})
 	config.Params = append(config.Params, GuacamoleXMLParam{
 		ParamName:  "password",
@@ -144,7 +147,7 @@ func CreateConnections() error {
 	}
 
 	if err = ioutil.WriteFile(nan.Config().AppServer.XMLConfigurationFile, output, 0777); err != nil {
-		LogError("Failed to save connections params : %s", err)
+		LogError("Failed to save connections in %s params : %s", nan.Config().AppServer.XMLConfigurationFile, err)
 		return err
 	}
 
