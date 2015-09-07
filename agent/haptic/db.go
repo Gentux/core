@@ -12,13 +12,16 @@ import (
 var ()
 
 type User struct {
-	Activated    bool
-	Email        string
-	Firstname    string
-	Lastname     string
-	Password     string
-	Sam          string
-	CreationTime string
+	Activated           bool
+	Email               string
+	Firstname           string
+	Lastname            string
+	Password            string
+	Sam                 string
+	CreationTime        string
+	Profile             string
+	Token               string
+	TokenExpirationTime string
 }
 
 func InitialiseDb() {
@@ -128,6 +131,10 @@ func (p Db) DeleteUser(user User) *nan.Err {
 		bucket := tx.Bucket([]byte("users"))
 		if bucket == nil {
 			return errors.New("Bucket 'users' doesn't exist")
+		}
+
+		if user.Profile == "admin" {
+			return errors.New("Admin users can't be deleted")
 		}
 
 		return bucket.Delete([]byte(user.Email))
