@@ -108,6 +108,7 @@ func RegisterUser(accountParam AccountParams) *nan.Err {
 			Firstname:    accountParam.FirstName,
 			Lastname:     accountParam.LastName,
 			Password:     accountParam.Password,
+			Profile:      "user",
 			Sam:          "",
 			CreationTime: "",
 		}
@@ -138,7 +139,6 @@ func RegisterUser(accountParam AccountParams) *nan.Err {
 			if e != nil {
 				return e
 			}
-
 			return bucket.Put([]byte(accountParam.Email), userJson)
 		})
 
