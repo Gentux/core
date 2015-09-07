@@ -54,12 +54,12 @@ func SecureHandler(h http.Handler) http.Handler {
 			return
 		}
 
-		//		isUserRegistered, _ := g_Db.IsUserRegistered(value["email"])
-		//		expirationTime, _ := time.Parse(time.RFC3339, value["expirationTime"])
-		//		if !isUserRegistered || time.Now() >= expirationTime {
-		// TODO Return 401
-		//		}
-
+		isUserRegistered, _ := g_Db.IsUserRegistered(value["email"])
+		expirationTime, _ := time.Parse(time.RFC3339, value["expirationTime"])
+		if isUserRegistered == false && time.Now().After(expirationTime) {
+			http.Error(w, http.StatusText(401), 401)
+			return
+		}
 		h.ServeHTTP(w, r)
 	})
 }
@@ -71,32 +71,31 @@ func loginHandler(response http.ResponseWriter, request *http.Request) {
 		email          string = request.FormValue("email")
 		password       string = request.FormValue("password")
 		user           User
-		redirectTarget string = "/"
 		expirationTime time.Time
 	)
 
-	user, _ = g_Db.GetUser(email)
-	if password != user.Password {
-		redirectTarget = "/login.html"
+	user, err := g_Db.GetUser(email)
+	if err != nil || user.Email == "" || password != user.Password {
+		http.Error(response, http.StatusText(403), 403)
 	} else {
 		expirationTime = time.Now().Add(4 * time.Hour)
 		value := map[string]string{
 			"email":          user.Email,
 			"expirationTime": expirationTime.Format(time.RFC3339),
 		}
-		user.TokenExpirationTime = user.CreationTime
 		if encoded, err := cookieHandler.Encode("nanocloud", value); err == nil {
 			cookie := &http.Cookie{
-				Name:  "nanocloud",
-				Value: encoded,
-				Path:  "/",
+				Name:     "nanocloud",
+				Value:    encoded,
+				Path:     "/",
+				Expires:  expirationTime,
+				HttpOnly: true,
 			}
 			http.SetCookie(response, cookie)
 		}
-		redirectTarget = "/"
 	}
 
-	http.Redirect(response, request, redirectTarget, 302)
+	http.Redirect(response, request, "/", 302)
 }
 
 func RunServer() {
@@ -110,7 +109,6 @@ func RunServer() {
 	// Setup RPC server
 	pRpcServer := rpc.NewServer()
 	pRpcServer.RegisterCodec(json.NewCodec(), "application/json")
-	pRpcServer.RegisterService(new(ServiceAuthentication), "")
 	pRpcServer.RegisterService(new(ServiceIaas), "")
 	pRpcServer.RegisterService(new(ServiceApplications), "")
 	pRpcServer.RegisterService(new(ServiceUsers), "")
