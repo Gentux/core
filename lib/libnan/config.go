@@ -17,6 +17,11 @@ const (
 	unsetduration = math.MinInt64
 )
 
+type AdminUserConfig_t struct {
+	Email    string
+	Password string
+}
+
 type DatabaseConfig_t struct {
 	Type             string
 	ConnectionString string
@@ -66,6 +71,7 @@ type Config_t struct {
 
 	ConsulPath string
 
+	AdminUser AdminUserConfig_t
 	Database  DatabaseConfig_t
 	Proxy     ProxyConfig_t
 	AppServer AppServerConfig_t

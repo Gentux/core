@@ -12,16 +12,14 @@ import (
 var ()
 
 type User struct {
-	Activated           bool
-	Email               string
-	Firstname           string
-	Lastname            string
-	Password            string
-	Sam                 string
-	CreationTime        string
-	Profile             string
-	Token               string
-	TokenExpirationTime string
+	Activated    bool
+	Email        string
+	Firstname    string
+	Lastname     string
+	Password     string
+	Sam          string
+	CreationTime string
+	Profile      string
 }
 
 func InitialiseDb() {
@@ -44,6 +42,32 @@ func InitialiseDb() {
 	if err != nil {
 		LogErrorCode(ErrIssueWithAccountsDb)
 		return
+	}
+
+	var stats bolt.BucketStats
+	err = g_Db.View(func(tx *bolt.Tx) error {
+
+		bucket := tx.Bucket([]byte("users"))
+		if bucket == nil {
+			return errors.New("Bucket 'users' doesn't exist")
+		}
+
+		// If no user exists (new database) create first admin
+		stats = bucket.Stats()
+		return nil
+	})
+
+	if stats.KeyN == 0 {
+		g_Db.AddUser(User{
+			Activated:    true,
+			Email:        nan.Config().AdminUser.Email,
+			Firstname:    "admin",
+			Lastname:     "admin",
+			Password:     nan.Config().AdminUser.Password,
+			Sam:          "",
+			CreationTime: "",
+			Profile:      "admin",
+		})
 	}
 }
 
@@ -71,13 +95,8 @@ func (p Db) GetUser(Email string) (User, *nan.Err) {
 			return errors.New("Bucket 'users' doesn't exist")
 		}
 
-		cursor := bucket.Cursor()
-		for key, value := cursor.First(); key != nil; key, value = cursor.Next() {
-			if string(key) == Email {
-				json.Unmarshal(value, &user)
-				break
-			}
-		}
+		userJson := bucket.Get([]byte(Email))
+		json.Unmarshal(userJson, &user)
 
 		return nil
 	})
@@ -111,7 +130,7 @@ func (p Db) GetUsers() ([]User, *nan.Err) {
 }
 
 func (p Db) AddUser(user User) *nan.Err {
-	e := g_Db.View(func(tx *bolt.Tx) error {
+	e := g_Db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte("users"))
 		if bucket == nil {
 			return errors.New("Bucket 'users' doesn't exist")
