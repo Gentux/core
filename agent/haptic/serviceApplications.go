@@ -27,15 +27,19 @@ func (p *ServiceApplications) GetList(r *http.Request, args *NoArgs, reply *GetA
 	return nil
 }
 
-type SamAccountParam struct {
-	Sam string
-}
+func (p *ServiceApplications) GetListForCurrentUser(r *http.Request, args *NoArgs, reply *GetApplicationsListReply) error {
 
-func (p *ServiceApplications) GetListForSamAccount(r *http.Request, args *SamAccountParam, reply *GetApplicationsListReply) error {
+	value := make(map[string]string)
+	cookie, _ := r.Cookie("nanocloud")
+	cookieHandler.Decode("nanocloud", cookie.Value, &value)
+	user, _ := g_Db.GetUser(value["email"])
 
-	connections, _ := adapter.GetApplicationsForSamAccount(args.Sam)
+	connections, e := adapter.GetApplicationsForSamAccount(user.Sam)
+	if e != nil {
+		return errors.New("Unable to retrieve connection for Email " + user.Email)
+	}
+
 	reply.Applications = connections
-
 	return nil
 }
 
