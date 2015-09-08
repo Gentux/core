@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 )
 
@@ -14,6 +15,11 @@ type GetApplicationsListReply struct {
 }
 
 func (p *ServiceApplications) GetList(r *http.Request, args *NoArgs, reply *GetApplicationsListReply) error {
+
+	cookie, _ := r.Cookie("nanocloud")
+	if Enforce("admin", cookie.Value) == false {
+		return errors.New("You need admin permission to perform this action")
+	}
 
 	connections, _ := adapter.GetApplications()
 	reply.Applications = connections
@@ -68,6 +74,11 @@ type UnpublishApplicationParam struct {
 }
 
 func (p *ServiceApplications) UnpublishApplication(r *http.Request, args *UnpublishApplicationParam, reply *DefaultReply) error {
+
+	cookie, _ := r.Cookie("nanocloud")
+	if Enforce("admin", cookie.Value) == false {
+		return errors.New("You need admin permission to perform this action")
+	}
 
 	adapter.UnpublishApp(args.ApplicationName)
 	reply.Result = true

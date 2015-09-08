@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 )
 
@@ -15,6 +16,11 @@ type GetVmListReply struct {
 
 func (p *ServiceIaas) GetList(r *http.Request, args *NoArgs, reply *GetVmListReply) error {
 
+	cookie, _ := r.Cookie("nanocloud")
+	if Enforce("admin", cookie.Value) == false {
+		return errors.New("You need admin permission to perform this action")
+	}
+
 	vmListJson, _ := adapter.GetVmList()
 	reply.VmListJsonArray = vmListJson
 
@@ -27,6 +33,11 @@ type RequestState struct {
 
 func (p *ServiceIaas) Download(r *http.Request, args *NoArgs, reply *RequestState) error {
 
+	cookie, _ := r.Cookie("nanocloud")
+	if Enforce("admin", cookie.Value) == false {
+		return errors.New("You need admin permission to perform this action")
+	}
+
 	requestState, _ := adapter.DownloadWindowsVm()
 	reply.Success = requestState
 
@@ -34,6 +45,11 @@ func (p *ServiceIaas) Download(r *http.Request, args *NoArgs, reply *RequestStat
 }
 
 func (p *ServiceIaas) DownloadStatus(r *http.Request, args *NoArgs, reply *RequestState) error {
+
+	cookie, _ := r.Cookie("nanocloud")
+	if Enforce("admin", cookie.Value) == false {
+		return errors.New("You need admin permission to perform this action")
+	}
 
 	requestState, _ := adapter.DownloadStatus()
 	reply.Success = requestState
@@ -46,6 +62,11 @@ type VmNameArgs struct {
 }
 
 func (p *ServiceIaas) Start(r *http.Request, args *VmNameArgs, reply *RequestState) error {
+
+	cookie, _ := r.Cookie("nanocloud")
+	if Enforce("admin", cookie.Value) == false {
+		return errors.New("You need admin permission to perform this action")
+	}
 
 	requestState, _ := adapter.StartVm(args.VmName)
 	reply.Success = requestState

@@ -38,6 +38,16 @@ func StaticHandler(w http.ResponseWriter, pRequest *http.Request) {
 	http.ServeFile(w, pRequest, LocalPath)
 }
 
+func Enforce(profile string, encodedCookie string) bool {
+	// TODO method calling this function should return 403 status code
+	value := make(map[string]string)
+	cookieHandler.Decode("nanocloud", encodedCookie, &value)
+
+	user, _ := g_Db.GetUser(value["email"])
+
+	return user.Profile == "admin" || profile == user.Profile
+}
+
 func SecureHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -95,7 +105,11 @@ func loginHandler(response http.ResponseWriter, request *http.Request) {
 		}
 	}
 
-	http.Redirect(response, request, "/", 302)
+	if user.Profile == "admin" {
+		http.Redirect(response, request, "/admin.html", 302)
+	} else {
+		http.Redirect(response, request, "/", 302)
+	}
 }
 
 func RunServer() {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"net/http"
 )
@@ -17,6 +18,11 @@ type GetUsersListReply struct {
 }
 
 func (p *ServiceUsers) GetList(r *http.Request, args *NoArgs, reply *GetUsersListReply) error {
+
+	cookie, _ := r.Cookie("nanocloud")
+	if Enforce("admin", cookie.Value) == false {
+		return errors.New("You need admin permission to perform this action")
+	}
 
 	if users, err := g_Db.GetUsers(); err != nil {
 		LogErrorCode(err)
@@ -45,6 +51,11 @@ type RegisterUserParam struct {
 
 func (p *ServiceUsers) RegisterUser(r *http.Request, args *RegisterUserParam, reply *DefaultReply) error {
 
+	cookie, _ := r.Cookie("nanocloud")
+	if Enforce("admin", cookie.Value) == false {
+		return errors.New("You need admin permission to perform this action")
+	}
+
 	err := adapter.RegisterUser(args.Firstname, args.Lastname, args.Email, args.Password)
 	if err != nil {
 		reply.Result = false
@@ -56,6 +67,11 @@ func (p *ServiceUsers) RegisterUser(r *http.Request, args *RegisterUserParam, re
 }
 
 func (p *ServiceUsers) UpdateUser(r *http.Request, args *RegisterUserParam, reply *DefaultReply) error {
+
+	cookie, _ := r.Cookie("nanocloud")
+	if Enforce("admin", cookie.Value) == false {
+		return errors.New("You need admin permission to perform this action")
+	}
 
 	adapter.RegisterUser(args.Firstname, args.Lastname, args.Email, args.Password)
 
@@ -70,6 +86,11 @@ type UpdatePasswordParam struct {
 
 func (p *ServiceUsers) UpdateUserPassword(r *http.Request, args *UpdatePasswordParam, reply *DefaultReply) error {
 
+	cookie, _ := r.Cookie("nanocloud")
+	if Enforce("admin", cookie.Value) == false {
+		return errors.New("You need admin permission to perform this action")
+	}
+
 	adapter.UpdateUserPassword(args.Email, args.Password)
 
 	return nil
@@ -82,6 +103,11 @@ type DeleteUserParam struct {
 }
 
 func (p *ServiceUsers) DeleteUser(r *http.Request, args *DeleteUserParam, reply *DefaultReply) error {
+
+	cookie, _ := r.Cookie("nanocloud")
+	if Enforce("admin", cookie.Value) == false {
+		return errors.New("You need admin permission to perform this action")
+	}
 
 	err := adapter.DeleteUser(args.Email)
 	if err != nil {
