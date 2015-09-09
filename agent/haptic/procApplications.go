@@ -235,6 +235,7 @@ func ListApplicationsForSamAccount(sam string) []Connection {
 	for _, config := range guacamoleConfigs.Config {
 		var connection Connection
 
+		connection.ConnectionName = config.Name
 		for _, param := range config.Params {
 			switch true {
 			case param.ParamName == "hostname":
@@ -250,7 +251,7 @@ func ListApplicationsForSamAccount(sam string) []Connection {
 			}
 		}
 
-		if connection.Username == sam {
+		if connection.Username == fmt.Sprintf("%s@%s", sam, nan.Config().AppServer.WindowsDomain) {
 			connections = append(connections, connection)
 		}
 	}
@@ -282,5 +283,33 @@ func UnpublishApplication(Alias string) {
 	_, err := ssh.Run(powershellCmd)
 	if err != nil {
 		panic("Can't run remote command: " + err.Error())
+	}
+}
+
+// ========================================================================================================================
+// Procedure: SyncUploadedFile
+//
+// Does:
+// - Upload user files to windows VM
+// ========================================================================================================================
+func SyncUploadedFile(Filename string) {
+
+	ssh := &easyssh.MakeConfig{
+		User:     nan.Config().AppServer.User,
+		Server:   nan.Config().AppServer.Server,
+		Port:     strconv.Itoa(nan.Config().AppServer.SSHPort),
+		Password: nan.Config().AppServer.Password,
+	}
+
+	fmt.Println("SyncUploadedFile")
+
+	// Call Scp method with file you want to upload to remote server.
+	err := ssh.Scp(Filename)
+
+	// Handle errors
+	if err != nil {
+		LogError("Can't run remote command: " + err.Error())
+	} else {
+		fmt.Printf("SCP upload success for file %s\n", Filename)
 	}
 }
