@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	nan "nanocloud.com/zeroinstall/lib/libnan"
@@ -46,6 +50,41 @@ func Enforce(profile string, encodedCookie string) bool {
 	user, _ := g_Db.GetUser(value["email"])
 
 	return user.Profile == "admin" || profile == user.Profile
+}
+
+func uploadHandler(w http.ResponseWriter, r *http.Request) {
+
+	// the FormFile function takes in the POST input id file
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, http.StatusText(400), 400)
+		return
+	}
+	defer file.Close()
+
+	// Compute a hash name for this file on disk
+	tempDst := filepath.Join(nan.Config().CommonBaseDir, "uploads", header.Filename)
+	if err = os.MkdirAll(filepath.Join(nan.Config().CommonBaseDir, "uploads"), os.ModePerm); err != nil {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+	tmpOutput, err := os.Create(tempDst)
+	if err != nil {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+	defer tmpOutput.Close()
+
+	// write the content from POST to the file
+	_, err = io.Copy(tmpOutput, file)
+	if err != nil {
+		http.Error(w, http.StatusText(500), 500)
+	}
+
+	fmt.Fprintf(w, "File uploaded successfully : ")
+	fmt.Fprintf(w, header.Filename)
+
+	go SyncUploadedFile(tempDst)
 }
 
 func SecureHandler(h http.Handler) http.Handler {
@@ -119,6 +158,9 @@ func RunServer() {
 
 	// Login handler
 	http.HandleFunc("/login", loginHandler)
+
+	// Upload file handler
+	http.HandleFunc("/upload", uploadHandler)
 
 	// Setup RPC server
 	pRpcServer := rpc.NewServer()
