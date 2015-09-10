@@ -88,59 +88,87 @@ func CreateConnections() error {
 	users, _ := g_Db.GetUsers()
 	for _, user := range users {
 		for _, application := range applications {
-			var config GuacamoleXMLConfig
+			if application.Alias == "hapticPowershell" {
+				continue
+			}
 
-			config.Name = fmt.Sprintf("%s_%s", application.Alias, user.Email)
-			config.Protocol = "rdp"
-
-			config.Params = append(config.Params, GuacamoleXMLParam{
-				ParamName:  "hostname",
-				ParamValue: nan.Config().AppServer.Server,
+			connections.Config = append(connections.Config, GuacamoleXMLConfig{
+				Name:     fmt.Sprintf("%s_%s", application.Alias, user.Email),
+				Protocol: "rdp",
+				Params: []GuacamoleXMLParam{
+					GuacamoleXMLParam{
+						ParamName:  "hostname",
+						ParamValue: nan.Config().AppServer.Server,
+					},
+					GuacamoleXMLParam{
+						ParamName:  "port",
+						ParamValue: strconv.Itoa(nan.Config().AppServer.RDPPort),
+					},
+					GuacamoleXMLParam{
+						ParamName:  "username",
+						ParamValue: fmt.Sprintf("%s@%s", user.Sam, nan.Config().AppServer.WindowsDomain),
+					},
+					GuacamoleXMLParam{
+						ParamName:  "password",
+						ParamValue: user.Password,
+					},
+					GuacamoleXMLParam{
+						ParamName:  "remote-app",
+						ParamValue: fmt.Sprintf("||%s", application.Alias),
+					},
+				},
 			})
-			config.Params = append(config.Params, GuacamoleXMLParam{
-				ParamName:  "port",
-				ParamValue: strconv.Itoa(nan.Config().AppServer.RDPPort),
-			})
-			config.Params = append(config.Params, GuacamoleXMLParam{
-				ParamName:  "username",
-				ParamValue: fmt.Sprintf("%s@%s", user.Sam, nan.Config().AppServer.WindowsDomain),
-			})
-			config.Params = append(config.Params, GuacamoleXMLParam{
-				ParamName:  "password",
-				ParamValue: user.Password,
-			})
-			config.Params = append(config.Params, GuacamoleXMLParam{
-				ParamName:  "remote-app",
-				ParamValue: fmt.Sprintf("||%s", application.Alias),
-			})
-
-			connections.Config = append(connections.Config, config)
 		}
 	}
 
-	var config GuacamoleXMLConfig
-
-	config.Name = "desktop"
-	config.Protocol = "rdp"
-
-	config.Params = append(config.Params, GuacamoleXMLParam{
-		ParamName:  "hostname",
-		ParamValue: nan.Config().AppServer.Server,
+	connections.Config = append(connections.Config, GuacamoleXMLConfig{
+		Name:     "hapticDesktop",
+		Protocol: "rdp",
+		Params: []GuacamoleXMLParam{
+			GuacamoleXMLParam{
+				ParamName:  "hostname",
+				ParamValue: nan.Config().AppServer.Server,
+			},
+			GuacamoleXMLParam{
+				ParamName:  "port",
+				ParamValue: strconv.Itoa(nan.Config().AppServer.RDPPort),
+			},
+			GuacamoleXMLParam{
+				ParamName:  "username",
+				ParamValue: fmt.Sprintf("%s@%s", nan.Config().AppServer.User, nan.Config().AppServer.WindowsDomain),
+			},
+			GuacamoleXMLParam{
+				ParamName:  "password",
+				ParamValue: nan.Config().AppServer.Password,
+			},
+		},
 	})
-	config.Params = append(config.Params, GuacamoleXMLParam{
-		ParamName:  "port",
-		ParamValue: strconv.Itoa(nan.Config().AppServer.RDPPort),
+	connections.Config = append(connections.Config, GuacamoleXMLConfig{
+		Name:     "hapticPowershell",
+		Protocol: "rdp",
+		Params: []GuacamoleXMLParam{
+			GuacamoleXMLParam{
+				ParamName:  "hostname",
+				ParamValue: nan.Config().AppServer.Server,
+			},
+			GuacamoleXMLParam{
+				ParamName:  "port",
+				ParamValue: strconv.Itoa(nan.Config().AppServer.RDPPort),
+			},
+			GuacamoleXMLParam{
+				ParamName:  "username",
+				ParamValue: fmt.Sprintf("%s@%s", nan.Config().AppServer.User, nan.Config().AppServer.WindowsDomain),
+			},
+			GuacamoleXMLParam{
+				ParamName:  "password",
+				ParamValue: nan.Config().AppServer.Password,
+			},
+			GuacamoleXMLParam{
+				ParamName:  "remote-app",
+				ParamValue: "||hapticPowershell",
+			},
+		},
 	})
-	config.Params = append(config.Params, GuacamoleXMLParam{
-		ParamName:  "username",
-		ParamValue: fmt.Sprintf("%s@%s", nan.Config().AppServer.User, nan.Config().AppServer.WindowsDomain),
-	})
-	config.Params = append(config.Params, GuacamoleXMLParam{
-		ParamName:  "password",
-		ParamValue: nan.Config().AppServer.Password,
-	})
-
-	connections.Config = append(connections.Config, config)
 
 	output, err := xml.MarshalIndent(connections, "  ", "    ")
 	if err != nil {
@@ -201,6 +229,10 @@ func ListApplications() []Connection {
 		}
 		connection.ConnectionName = config.Name
 
+		if connection.RemoteApp == "" || connection.RemoteApp == "||hapticPowershell" {
+			continue
+		}
+
 		connections = append(connections, connection)
 	}
 
@@ -234,6 +266,10 @@ func ListApplicationsForSamAccount(sam string) []Connection {
 
 	for _, config := range guacamoleConfigs.Config {
 		var connection Connection
+
+		if connection.ConnectionName == "hapticPowershell" {
+			continue
+		}
 
 		connection.ConnectionName = config.Name
 		for _, param := range config.Params {
