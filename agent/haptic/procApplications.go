@@ -337,8 +337,6 @@ func SyncUploadedFile(Filename string) {
 		Password: nan.Config().Apps.AppServer.Password,
 	}
 
-	fmt.Println("SyncUploadedFile")
-
 	// Call Scp method with file you want to upload to remote server.
 	err := ssh.Scp(Filename)
 
