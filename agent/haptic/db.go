@@ -11,6 +11,11 @@ import (
 
 var ()
 
+// We wrap the DB provider in a user struct to which we can add our own methods
+type Db struct {
+	*bolt.DB
+}
+
 type User struct {
 	Activated    bool
 	Email        string
@@ -22,30 +27,29 @@ type User struct {
 	Profile      string
 }
 
-func InitialiseDb() {
-	var err error
+func InitialiseDb() *nan.Err {
+
+	var e error
 
 	if nan.DryRun || nan.ModeRef {
-		return
+		return nil
 	}
 
-	g_Db.DB, err = bolt.Open(nan.Config().CommonBaseDir+"/"+nan.Config().Database.ConnectionString, 0777, nil)
-	if err != nil {
-		LogErrorCode(ErrIssueWithAccountsDb)
-		return
+	g_Db.DB, e = bolt.Open(nan.Config().Database.ConnectionString, 0777, nil)
+	if e != nil {
+		return LogErrorCode(ErrIssueWithAccountsDb)
 	}
 
-	err = g_Db.Update(func(tx *bolt.Tx) error {
+	e = g_Db.Update(func(tx *bolt.Tx) error {
 		tx.CreateBucketIfNotExists([]byte("users"))
 		return nil
 	})
-	if err != nil {
-		LogErrorCode(ErrIssueWithAccountsDb)
-		return
+	if e != nil {
+		return LogErrorCode(ErrIssueWithAccountsDb)	
 	}
 
 	var stats bolt.BucketStats
-	err = g_Db.View(func(tx *bolt.Tx) error {
+	e = g_Db.View(func(tx *bolt.Tx) error {
 
 		bucket := tx.Bucket([]byte("users"))
 		if bucket == nil {
@@ -56,9 +60,12 @@ func InitialiseDb() {
 		stats = bucket.Stats()
 		return nil
 	})
+	if e != nil {
+		return LogErrorCode(nan.ErrFrom(e))
+	}
 
 	if stats.KeyN == 0 {
-		g_Db.AddUser(User{
+		err := g_Db.AddUser(User{
 			Activated:    true,
 			Email:        nan.Config().AdminUser.Email,
 			Firstname:    "admin",
@@ -68,7 +75,13 @@ func InitialiseDb() {
 			CreationTime: "",
 			Profile:      "admin",
 		})
+
+		if err != nil {
+			return LogErrorCode(err)
+		}
 	}
+
+	return nil
 }
 
 func ShutdownDb() {

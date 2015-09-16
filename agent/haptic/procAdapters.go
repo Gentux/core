@@ -3,15 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/boltdb/bolt"
-
 	nan "nanocloud.com/zeroinstall/lib/libnan"
 )
-
-// We wrap sql.DB in a user struct to which we can add our own methods
-type Db struct {
-	*bolt.DB
-}
 
 type adapter_t struct{}
 

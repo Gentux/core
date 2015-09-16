@@ -128,8 +128,8 @@ func SetupPlugins() {
 	pluginLdapJsonParams, _ = json.Marshal(nan.Config().Plugins["Ldap"])
 	err = g_PluginLdap.Call("Ldap.Configure", string(pluginLdapJsonParams), &resp)
 	if err != nil {
-		LogError("failed to configure plugin Ldap : %s", err)
-		return
+		LogError("failed to configure plugin Ldap : %s", err.Error())
+		ExitError(nan.ErrPluginError)
 	}
 	Log("Start plugin Ldap : DONE")
 
