@@ -23,7 +23,7 @@ haptic: iaas ldap owncloud ./bin/haptic/haptic
 ./bin/haptic/haptic:
 	go build -o ./bin/haptic/haptic nanocloud.com/zeroinstall/agent/haptic
 
-dev: haptic
+setup: haptic
 	mkdir -p ./bin/haptic/plugins
 	mkdir -p ./bin/haptic/plugins/iaas
 	mkdir -p ./bin/haptic/plugins/ldap
