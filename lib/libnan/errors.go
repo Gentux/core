@@ -127,6 +127,7 @@ var (
 	ErrSomethingWrong       = NewExitCode(0, "Something went wrong")
 	ErrOk                   = NewExitCode(1, "Operation succeeded")
 	OkSuccess               = NewExitCode(1, "Operation succeeded")
+	ErrConfigError          = NewExitCode(2, "Error in config file")
 	ErrPluginError          = NewExitCode(2, "Plugin error")
 	ErrUnknownUuid          = NewExitCode(3, "Unknown resource UUID")
 	ErrOpFailed             = NewExitCode(4, "Operation failed: resource is not in the state required to perform the operation")
