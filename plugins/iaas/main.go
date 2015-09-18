@@ -25,7 +25,7 @@ type VmInfo struct {
 	Ico         string
 	Name        string
 	DisplayName string
-	Running     bool
+	Status      string
 	Locked      bool
 }
 
@@ -65,9 +65,10 @@ func (p *Iaas) ListRunningVm(jsonParams string, _outMsg *string) error {
 	var (
 		response struct {
 			Result struct {
+				DownloadingVmNames []string
 				AvailableVMNames   []string
+				BootingVmNames     []string
 				RunningVmNames     []string
-				DownloadInProgress bool
 			}
 			Error string
 			Id    int
@@ -75,7 +76,7 @@ func (p *Iaas) ListRunningVm(jsonParams string, _outMsg *string) error {
 		vmList      []VmInfo
 		icon        string
 		locked      bool
-		running     bool
+		status      string
 		displayName string
 	)
 	jsonResponse, err := jsonRpcRequest(
@@ -109,12 +110,21 @@ func (p *Iaas) ListRunningVm(jsonParams string, _outMsg *string) error {
 			locked = true
 			displayName = "Haptic"
 		}
-		running = stringInSlice(vmName, response.Result.RunningVmNames)
+
+		if stringInSlice(vmName, response.Result.RunningVmNames) {
+			status = "running"
+		} else if stringInSlice(vmName, response.Result.BootingVmNames) {
+			status = "booting"
+		} else if stringInSlice(vmName, response.Result.DownloadingVmNames) {
+			status = "download"
+		} else if stringInSlice(vmName, response.Result.AvailableVMNames) {
+			status = "available"
+		}
 		vmList = append(vmList, VmInfo{
 			Ico:         icon,
 			Name:        vmName,
 			DisplayName: displayName,
-			Running:     running,
+			Status:      status,
 			Locked:      locked,
 		})
 	}
