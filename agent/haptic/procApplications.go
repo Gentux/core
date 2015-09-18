@@ -70,9 +70,10 @@ func CreateConnections() error {
 	}
 
 	// Call Run method with command you want to run on remote server.
-	response, err := ssh.Run("powershell.exe -Command \"Get-RDRemoteApp | ConvertTo-Json -Compress\"")
+	response, err := ssh.Run("C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -Command \"Import-Module RemoteDesktop; Get-RDRemoteApp | ConvertTo-Json -Compress\"")
 	if err != nil {
-		panic("Can't run remote command: " + err.Error())
+		LogError("Can't run remote command: %s\n", err)
+		response = "[]"
 	} else if response == "" {
 		response = "[]"
 	}
@@ -313,12 +314,12 @@ func UnpublishApplication(Alias string) {
 	}
 
 	// TODO Parametrize this
-	powershellCmd = fmt.Sprintf("powershell.exe -Command \"Remove-RDRemoteApp -Alias %s -CollectionName %s -Force\"", Alias, "winadapps")
+	powershellCmd = fmt.Sprintf("C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -Command \"Import-Module RemoteDesktop; Remove-RDRemoteApp -Alias %s -CollectionName %s -Force\"", Alias, "winadapps")
 
 	// Call Run method with command you want to run on remote server.
 	_, err := ssh.Run(powershellCmd)
 	if err != nil {
-		panic("Can't run remote command: " + err.Error())
+		LogError("Can't run remote command: %s\n", err.Error())
 	}
 }
 
@@ -342,8 +343,8 @@ func SyncUploadedFile(Filename string) {
 
 	// Handle errors
 	if err != nil {
-		LogError("Can't run remote command: " + err.Error())
+		LogError("Can't run remote command: %s\n", err.Error())
 	} else {
-		fmt.Printf("SCP upload success for file %s\n", Filename)
+		Log("SCP upload success for file %s\n", Filename)
 	}
 }
