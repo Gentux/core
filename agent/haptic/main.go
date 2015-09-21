@@ -47,10 +47,10 @@ var (
 	g_PluginOwncloud *pingo.Plugin
 
 	// Aliases useful for this package so that we don't have to have to prefix them with nan all the time
-	ExitOk    = nan.ExitOk
-	ExitError = nan.ExitError
-	Log       = nan.Log
-	LogError  = nan.LogError
+	ExitOk       = nan.ExitOk
+	ExitError    = nan.ExitError
+	Log          = nan.Log
+	LogError     = nan.LogError
 	LogErrorCode = nan.LogErrorCode
 )
 
@@ -71,6 +71,16 @@ func main() {
 	defer ShutdownDb()
 
 	switch os.Args[1] {
+	case "listusers":
+		users, err := ListUsers()
+		if err != nil {
+			nan.ExitError(err)
+		} else {
+			for _, u := range users {
+				fmt.Printf("%v\n", u)
+			}
+		}
+
 	case "registeruser":
 		adapter.RegisterUser(os.Args[2], os.Args[3], os.Args[4], os.Args[5])
 	case "activateuser":
@@ -98,7 +108,7 @@ func InitPlugin(pluginName string, ppPlugin **pingo.Plugin) {
 			return
 		}
 	}
-	
+
 	pluginPath := fmt.Sprintf("%s/plugins/%s/%s", nan.Config().CommonBaseDir,
 		pluginNameLowercase, pluginNameLowercase)
 
@@ -109,17 +119,17 @@ func InitPlugin(pluginName string, ppPlugin **pingo.Plugin) {
 
 	Log("Starting plugin %s", pluginRpcName)
 	(*ppPlugin).Start()
-	
+
 	pluginParams, e := json.Marshal(pluginJsonParams)
 
-	if e!=nil {
+	if e != nil {
 		LogError("Failed to unmarshall %s plugin params", pluginName)
 		ExitError(nan.ErrConfigError)
 	}
 
 	resp := ""
 
-	if e := (*ppPlugin).Call(pluginRpcName + ".Configure", string(pluginParams), &resp); e != nil {
+	if e := (*ppPlugin).Call(pluginRpcName+".Configure", string(pluginParams), &resp); e != nil {
 		// TODO Clarify error and string output
 		Log("Error while configuring plugin %s : %s", pluginRpcName, e)
 		// TODO activate this line when all plugins have a Configure method

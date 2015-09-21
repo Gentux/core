@@ -155,13 +155,13 @@ func RegisterUser(accountParam AccountParams) *nan.Err {
 // Does:
 // - Return list of users
 // ========================================================================================================================
-func ListUsers() []User {
+func ListUsers() ([]User, *nan.Err) {
 	var (
 		user  User
 		users []User
 	)
 
-	g_Db.View(func(tx *bolt.Tx) error {
+	e := g_Db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte("users"))
 		if bucket == nil {
 			return errors.New("Bucket 'users' doesn't exist")
@@ -176,7 +176,13 @@ func ListUsers() []User {
 		return nil
 	})
 
-	return users
+	if e != nil {
+		err := nan.ErrFrom(e)
+		LogError("DB error in UpdateUserPassword: %s", err.Message)
+		return nil, err
+	}
+
+	return users, nil
 }
 
 func UpdateUserPassword(Email string, Password string) bool {

@@ -32,10 +32,6 @@ func (o adapter_t) ActivateUser(_Email string) *nan.Err {
 	return ActivateUser(params)
 }
 
-func (o adapter_t) GetUsers() ([]User, *nan.Err) {
-	return ListUsers(), nil
-}
-
 func (o adapter_t) UpdateUserEmail(_PrevEmail, _NewEmail string) error {
 
 	fmt.Println("TODO UpdateUserEmail")
