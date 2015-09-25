@@ -151,6 +151,31 @@ func loginHandler(response http.ResponseWriter, request *http.Request) {
 	}
 }
 
+func logoutHandler(response http.ResponseWriter, request *http.Request) {
+	if _, err := request.Cookie("nanocloud"); err != nil {
+		http.Redirect(response, request, "/", 302)
+		return
+	}
+
+	expirationTime := time.Now()
+	value := map[string]string{
+		"email":          "",
+		"expirationTime": expirationTime.Format(time.RFC3339),
+		"expired":        "true",
+	}
+	if encoded, err := cookieHandler.Encode("nanocloud", value); err == nil {
+		cookie := &http.Cookie{
+			Name:     "nanocloud",
+			Value:    encoded,
+			Path:     "/",
+			Expires:  expirationTime,
+			HttpOnly: true,
+		}
+		http.SetCookie(response, cookie)
+	}
+	http.Redirect(response, request, "/", 302)
+}
+
 func RunServer() {
 
 	// Setup basic HTTP server to serve static content
@@ -158,6 +183,7 @@ func RunServer() {
 
 	// Login handler
 	http.HandleFunc("/login", loginHandler)
+	http.HandleFunc("/logout", logoutHandler)
 
 	// Upload file handler
 	http.HandleFunc("/upload", uploadHandler)
