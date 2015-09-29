@@ -131,9 +131,9 @@ func InitPlugin(pluginName string, ppPlugin **pingo.Plugin) {
 
 	if e := (*ppPlugin).Call(pluginRpcName+".Configure", string(pluginParams), &resp); e != nil {
 		// TODO Clarify error and string output
-		Log("Error while configuring plugin %s : %s", pluginRpcName, e)
+		LogError("while configuring plugin %s : %s", pluginRpcName, e)
 		// TODO activate this line when all plugins have a Configure method
-		// ExitError(nan.ErrPluginError)
+		ExitError(nan.ErrPluginError)
 	}
 
 	Log("Start plugin %s : DONE", pluginRpcName)

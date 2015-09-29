@@ -2,20 +2,23 @@
 
 .DEFAULT_GOAL := haptic
 
-owncloud: ../bin/haptic/plugins/owncloud/owncloud
-
-../bin/haptic/plugins/owncloud/owncloud: ../plugins/owncloud/main.go
-	go build -o ../bin/haptic/plugins/owncloud/owncloud nanocloud.com/plugins/owncloud
-
 ldap: ../bin/haptic/plugins/ldap/ldap
 
+#.PHONY: ../bin/haptic/plugins/ldap/ldap
 ../bin/haptic/plugins/ldap/ldap: ../plugins/ldap/main.go
 	go build -o ../bin/haptic/plugins/ldap/ldap nanocloud.com/plugins/ldap
 
 iaas: ../bin/haptic/plugins/iaas/iaas
 
+#.PHONY: ../bin/haptic/plugins/iaas
 ../bin/haptic/plugins/iaas/iaas: ../plugins/iaas/main.go
 	go build -o ../bin/haptic/plugins/iaas/iaas nanocloud.com/plugins/iaas
+
+owncloud: ../bin/haptic/plugins/owncloud/owncloud
+
+#.PHONY: ../bin/haptic/plugins/owncloud/owncloud
+../bin/haptic/plugins/owncloud/owncloud: ../plugins/owncloud/main.go
+	go build -o ../bin/haptic/plugins/owncloud/owncloud nanocloud.com/plugins/owncloud
 
 haptic: iaas ldap owncloud ../bin/haptic/haptic
 
@@ -60,7 +63,7 @@ setup:
 
 	@ if [ ! -f ../bin/haptic/config.json ]; then \
 		echo "One time creation of config file: ../bin/haptic/config.json" ; \
-		cp ./core/haptic/config.json.sample ../bin/haptic/config.json; \
+		cp ./haptic/config.json.sample ../bin/haptic/config.json; \
 	fi
 
 serve:
