@@ -5,23 +5,23 @@
 owncloud: ./bin/haptic/plugins/owncloud/owncloud
 
 ./bin/haptic/plugins/owncloud/owncloud: ./plugins/owncloud/main.go
-	go build -o ./bin/haptic/plugins/owncloud/owncloud nanocloud.com/zeroinstall/plugins/owncloud
+	go build -o ./bin/haptic/plugins/owncloud/owncloud nanocloud.com/plugins/owncloud
 
 ldap: ./bin/haptic/plugins/ldap/ldap
 
 ./bin/haptic/plugins/ldap/ldap: ./plugins/ldap/main.go
-	go build -o ./bin/haptic/plugins/ldap/ldap nanocloud.com/zeroinstall/plugins/ldap
+	go build -o ./bin/haptic/plugins/ldap/ldap nanocloud.com/plugins/ldap
 
 iaas: ./bin/haptic/plugins/iaas/iaas
 
 ./bin/haptic/plugins/iaas/iaas: ./plugins/iaas/main.go
-	go build -o ./bin/haptic/plugins/iaas/iaas nanocloud.com/zeroinstall/plugins/iaas
+	go build -o ./bin/haptic/plugins/iaas/iaas nanocloud.com/plugins/iaas
 
 haptic: iaas ldap owncloud ./bin/haptic/haptic
 
 .PHONY: ./bin/haptic/haptic
 ./bin/haptic/haptic:
-	go build -o ./bin/haptic/haptic nanocloud.com/zeroinstall/agent/haptic
+	go build -o ./bin/haptic/haptic nanocloud.com/agent/haptic
 
 setup:
 	mkdir -p ./bin/haptic/plugins
@@ -67,7 +67,7 @@ clean:
 	rm ./bin/haptic/plugins/iaas/iaas
 	rm ./bin/haptic/plugins/ldap/ldap
 	rm ./bin/haptic/plugins/owncloud/owncloud
-	go clean nanocloud.com/zeroinstall/plugins/iaas
-	go clean nanocloud.com/zeroinstall/plugins/owncloud
-	go clean nanocloud.com/zeroinstall/plugins/ldap
-	go clean nanocloud.com/zeroinstall/agent/haptic
+	go clean nanocloud.com/plugins/iaas
+	go clean nanocloud.com/plugins/owncloud
+	go clean nanocloud.com/plugins/ldap
+	go clean nanocloud.com/agent/haptic
