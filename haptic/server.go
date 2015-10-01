@@ -19,7 +19,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-//TTEEEEEEEEST
 package main
 
 import (
@@ -220,9 +219,8 @@ func RunServer() {
 
 	secureHandler := SecureHandler(pRpcServer)
 	http.Handle("/rpc", secureHandler)
-
-	Log("Now listening on http://localhost:8081")
-	e := http.ListenAndServe(":8081", nil)
+	Log("Now listening on http://localhost:" + nan.Port)
+	e := http.ListenAndServe(":"+nan.Port, nil)
 	if e != nil {
 		log.Fatal(e)
 	}
