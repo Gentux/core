@@ -86,30 +86,12 @@ func main() {
 		}
 
 	case "registeruser":
-		if len(os.Args) != 6 {
-			fmt.Println("Command registeruser expects 4 arguments.\nUsage: haptic registeruser firstname lastname email password\n")
-		} else {
-			adapter.RegisterUser(os.Args[2], os.Args[3], os.Args[4], os.Args[5])
-		}
+		adapter.RegisterUser(os.Args[2], os.Args[3], os.Args[4], os.Args[5])
 	case "activateuser":
-		if len(os.Args) != 3 {
-			fmt.Println("Command activateuser expects 1 argument.\nUsage: haptic activateuser email\n")
-		} else {
-			nan.PrintErrorJson(adapter.ActivateUser(os.Args[2]))
-			os.Exit(0)
-		}
-
+		nan.PrintErrorJson(adapter.ActivateUser(os.Args[2]))
+		os.Exit(0)
 	case "deleteuser":
-		if len(os.Args) != 3 {
-			fmt.Println("Command deleteuser expects only one argument : the user email.\nUsage: haptic deleteuser email\n")
-		} else {
-			//adapter.DeleteUser(os.Args[2])
-
-			var params AccountParams = AccountParams{
-				Email: os.Args[2]}
-
-			DeleteUser(params)
-		}
+		adapter.DeleteUser(os.Args[2])
 	case "changeuserpassword":
 		adapter.UpdateUserPassword(os.Args[2], os.Args[3])
 
@@ -128,10 +110,8 @@ func InitPlugin(pluginName string, ppPlugin **pingo.Plugin) {
 	if pluginJsonParams, ok = nan.Config().Plugins[pluginNameLowercase]; !ok {
 
 		if pluginJsonParams, ok = nan.Config().Plugins[pluginRpcName]; !ok {
-
-			err := nan.Errorf("Plugin %s doesn't have a parameters section in config.json !", pluginName)
-
-			nan.ExitError(err)
+			LogError("Plugin %s doesn't have a parameters section in config.json !", pluginName)
+			return
 		}
 	}
 
@@ -157,9 +137,9 @@ func InitPlugin(pluginName string, ppPlugin **pingo.Plugin) {
 
 	if e := (*ppPlugin).Call(pluginRpcName+".Configure", string(pluginParams), &resp); e != nil {
 		// TODO Clarify error and string output
-		LogError("while configuring plugin %s : %s", pluginRpcName, e)
+		Log("Error while configuring plugin %s : %s", pluginRpcName, e)
 		// TODO activate this line when all plugins have a Configure method
-		ExitError(nan.ErrPluginError)
+		// ExitError(nan.ErrPluginError)
 	}
 
 	Log("Start plugin %s : DONE", pluginRpcName)
@@ -167,7 +147,6 @@ func InitPlugin(pluginName string, ppPlugin **pingo.Plugin) {
 
 func SetupPlugins() {
 	Log("Num plugins referenced in config : %d", len(nan.Config().Plugins))
-
 	InitPlugin("Iaas", &g_PluginIaas)
 	InitPlugin("Ldap", &g_PluginLdap)
 	InitPlugin("Owncloud", &g_PluginOwncloud)
