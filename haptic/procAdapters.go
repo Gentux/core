@@ -23,6 +23,8 @@
 package main
 
 import (
+	"fmt"
+
 	nan "nanocloud.com/core/lib/libnan"
 )
 
@@ -52,11 +54,28 @@ func (o adapter_t) ActivateUser(_Email string) *nan.Err {
 	return ActivateUser(params)
 }
 
+func (o adapter_t) UpdateUserEmail(_PrevEmail, _NewEmail string) error {
+
+	fmt.Println("TODO UpdateUserEmail")
+
+	return nil
+}
+
 func (o adapter_t) UpdateUserPassword(_Email, _Password string) *nan.Err {
 
 	if UpdateUserPassword(_Email, _Password) != true {
 		return nan.ErrPasswordNotUpdated
 	}
+
+	return nil
+}
+
+func (o adapter_t) DeleteUser(_Email string) error {
+
+	var params AccountParams = AccountParams{
+		Email: _Email}
+
+	DeleteUser(params)
 
 	return nil
 }
