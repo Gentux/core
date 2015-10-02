@@ -110,7 +110,6 @@ type Config_t struct {
 
 var (
 	g_Config Config_t
-	Port     string
 )
 
 func Config() Config_t {
@@ -194,8 +193,6 @@ func ConfigFileValid() bool {
 	if g_Config.Port == unsetstring {
 		fmt.Println(`Missing config param : "Port"`)
 		return false
-	} else {
-		Port = g_Config.Port
 	}
 
 	if g_Config.Role == "proxy" || g_Config.Role == "tac" {
