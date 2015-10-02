@@ -97,6 +97,7 @@ type Config_t struct {
 
 	CommonBaseDir string
 	LogFilePath   string
+	Port          string // Port to listen to in main
 
 	ConsulPath string
 
@@ -109,6 +110,7 @@ type Config_t struct {
 
 var (
 	g_Config Config_t
+	Port     string
 )
 
 func Config() Config_t {
@@ -165,6 +167,7 @@ func initConfigWithUnsetValues() {
 		Debug: false,
 
 		CommonBaseDir: unsetstring,
+		Port:          unsetstring,
 		LogFilePath:   unsetstring,
 		ConsulPath:    unsetstring,
 
@@ -186,6 +189,13 @@ func ConfigFileValid() bool {
 	if g_Config.LogFilePath == unsetstring {
 		fmt.Println(`Missing config param : "LogFilePath"`)
 		return false
+	}
+
+	if g_Config.Port == unsetstring {
+		fmt.Println(`Missing config param : "Port"`)
+		return false
+	} else {
+		Port = g_Config.Port
 	}
 
 	if g_Config.Role == "proxy" || g_Config.Role == "tac" {
