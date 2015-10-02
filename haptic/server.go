@@ -219,8 +219,8 @@ func RunServer() {
 
 	secureHandler := SecureHandler(pRpcServer)
 	http.Handle("/rpc", secureHandler)
-	Log("Now listening on http://localhost:" + nan.Port)
-	e := http.ListenAndServe(":"+nan.Port, nil)
+	Log("Now listening on http://localhost:" + nan.Config().Port)
+	e := http.ListenAndServe(":"+nan.Config().Port, nil)
 	if e != nil {
 		log.Fatal(e)
 	}
