@@ -34,13 +34,19 @@ iaas: ../bin/haptic/plugins/iaas/iaas
 ../bin/haptic/plugins/iaas/iaas: ../plugins/iaas/main.go
 	go build -o ../bin/haptic/plugins/iaas/iaas nanocloud.com/plugins/iaas
 
+history: ../bin/haptic/plugins/history/history
+
+#.PHONY: ../bin/haptic/plugins/history
+../bin/haptic/plugins/history/history: ../plugins/history/main.go
+	go build -o ../bin/haptic/plugins/history/history nanocloud.com/plugins/history
+
 owncloud: ../bin/haptic/plugins/owncloud/owncloud
 
 #.PHONY: ../bin/haptic/plugins/owncloud/owncloud
 ../bin/haptic/plugins/owncloud/owncloud: ../plugins/owncloud/main.go
 	go build -o ../bin/haptic/plugins/owncloud/owncloud nanocloud.com/plugins/owncloud
 
-haptic: iaas ldap owncloud ../bin/haptic/haptic
+haptic: history iaas ldap owncloud ../bin/haptic/haptic
 
 .PHONY: ../bin/haptic/haptic
 ../bin/haptic/haptic:
@@ -48,6 +54,7 @@ haptic: iaas ldap owncloud ../bin/haptic/haptic
 
 setup:
 	mkdir -p ../bin/haptic/plugins
+	mkdir -p ../bin/haptic/plugins/history
 	mkdir -p ../bin/haptic/plugins/iaas
 	mkdir -p ../bin/haptic/plugins/ldap
 	mkdir -p ../bin/haptic/plugins/owncloud
@@ -67,6 +74,11 @@ setup:
 	go get github.com/go-sql-driver/mysql
 
         # Copy configuration files
+
+	@ if [ ! -f ../bin/haptic/plugins/history/config.json ]; then \
+		echo "One time creation of config file: ../bin/haptic/plugins/history/config.json" ; \
+		cp ../plugins/history/config.json.sample ../bin/haptic/plugins/history/config.json; \
+	fi
 
 	@ if [ ! -f ../bin/haptic/plugins/iaas/config.json ]; then \
 		echo "One time creation of config file: ../bin/haptic/plugins/iaas/config.json" ; \

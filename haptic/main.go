@@ -46,6 +46,7 @@ var (
 
 	g_Db Db
 
+	g_PluginHistory  *pingo.Plugin
 	g_PluginLdap     *pingo.Plugin
 	g_PluginIaas     *pingo.Plugin
 	g_PluginOwncloud *pingo.Plugin
@@ -147,6 +148,7 @@ func InitPlugin(pluginName string, ppPlugin **pingo.Plugin) {
 
 func SetupPlugins() {
 	Log("Num plugins referenced in config : %d", len(nan.Config().Plugins))
+	InitPlugin("History", &g_PluginHistory)
 	InitPlugin("Iaas", &g_PluginIaas)
 	InitPlugin("Ldap", &g_PluginLdap)
 	InitPlugin("Owncloud", &g_PluginOwncloud)

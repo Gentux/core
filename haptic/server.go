@@ -215,7 +215,7 @@ func RunServer() {
 	pRpcServer.RegisterService(new(ServiceIaas), "")
 	pRpcServer.RegisterService(new(ServiceApplications), "")
 	pRpcServer.RegisterService(new(ServiceUsers), "")
-	pRpcServer.RegisterService(new(ServiceStats), "")
+	pRpcServer.RegisterService(new(ServiceHistory), "")
 
 	secureHandler := SecureHandler(pRpcServer)
 	http.Handle("/rpc", secureHandler)
