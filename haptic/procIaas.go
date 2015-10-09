@@ -121,3 +121,27 @@ func StartVm(vmName string) bool {
 		return false
 	}
 }
+
+// ========================================================================================================================
+// Procedure: StopVm
+//
+// Does:
+// - Stop a virtual machine matching vmName
+// ========================================================================================================================
+func StopVm(vmName string) bool {
+
+	var (
+		res string
+	)
+
+	err := g_PluginIaas.Call("Iaas.StopVm", vmName, &res)
+	if err != nil {
+		fmt.Printf("Error calling Iaas Plugin: %v", err)
+	}
+
+	if res == "true" {
+		return true
+	} else {
+		return false
+	}
+}

@@ -112,3 +112,7 @@ func (o adapter_t) DownloadStatus() (bool, error) {
 func (o adapter_t) StartVm(vmName string) (bool, error) {
 	return StartVm(vmName), nil
 }
+
+func (o adapter_t) StopVm(vmName string) (bool, error) {
+	return StopVm(vmName), nil
+}

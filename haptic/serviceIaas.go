@@ -95,3 +95,16 @@ func (p *ServiceIaas) Start(r *http.Request, args *VmNameArgs, reply *RequestSta
 
 	return nil
 }
+
+func (p *ServiceIaas) Stop(r *http.Request, args *VmNameArgs, reply *RequestState) error {
+
+	cookie, _ := r.Cookie("nanocloud")
+	if Enforce("admin", cookie.Value) == false {
+		return errors.New("You need admin permission to perform this action")
+	}
+
+	requestState, _ := adapter.StopVm(args.VmName)
+	reply.Success = requestState
+
+	return nil
+}
