@@ -16,8 +16,7 @@ func InitialiseDb() {
 		return
 	}
 
-	//TODO OPTIONalize this
-	pDb, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/guacamole?charset=utf8")
+	pDb, err := sql.Open(nan.Config().Database.Type, nan.Config().Database.ConnectionString)
 	g_Db = &Db{pDb}
 
 	if err != nil || g_Db == nil {

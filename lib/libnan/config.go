@@ -17,6 +17,11 @@ const (
 	unsetduration = math.MinInt64
 )
 
+type DatabaseConfig_t struct {
+	Type             string
+	ConnectionString string
+}
+
 type PluginParams map[string]string
 
 type PluginsInfo_t map[string]PluginParams
@@ -50,8 +55,9 @@ type Config_t struct {
 
 	ConsulPath string
 
-	Proxy   ProxyConfig_t
-	Plugins PluginsInfo_t
+	Database DatabaseConfig_t
+	Proxy    ProxyConfig_t
+	Plugins  PluginsInfo_t
 }
 
 var (

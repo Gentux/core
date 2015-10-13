@@ -7,6 +7,11 @@
 
     "CommonBaseDir" : "/home/fred/Nanocloud/Dev/Go/src/nanocloud/haptic",
 
+    "Database" : {
+        "type" : "mysql",
+        "ConnectionString" : "root:password@tcp(127.0.0.1:3306)/guacamole?charset=utf8",
+        "ConnectionString" : "root@unix(/tmp/haptic-mysql-DIiPB/mysql.socket)/guacamole?loc=UTC&charset=utf8"
+    },
     "ConsulPath" : "/var/nanocloud/cluster/consul/consul",
 
     "Proxy" : {
