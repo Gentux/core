@@ -69,24 +69,11 @@ func main() {
 	case "registeruser":
 		adapter.RegisterUser(os.Args[2], os.Args[3], os.Args[4], os.Args[5])
 	case "activateuser":
-		nan.PrintErrorJson(adapter.ActivateUser(os.Args[2]))
-		os.Exit(0)
+		adapter.ActivateUser(os.Args[2])
 	case "deleteuser":
 		adapter.DeleteUser(os.Args[2])
-
-	case "addownclouduser":
-		resp := ""
-		params := fmt.Sprintf(`{ "username" : "%s", "password" : "%s" }`, os.Args[2], os.Args[3])
-		g_PluginOwncloud.Call("Owncloud.AddUser", params, &resp)
-
-	case "delownclouduser":
-		resp := ""
-		params := fmt.Sprintf(`{ "username" : "%s" }`, os.Args[2])
-		g_PluginOwncloud.Call("Owncloud.DeleteUser", params, &resp)
-
-	case "changeuserpassword":
-		adapter.UpdateUserPassword(os.Args[2], os.Args[3])
-
+	case "changepassword":
+		//TODO
 	case "serve":
 		RunServer()
 	}
@@ -96,19 +83,19 @@ func SetupPlugins() {
 	Log("Num plugins referenced in config : %d", len(nan.Config().Plugins))
 
 	// Iaas
-	g_PluginIaas = pingo.NewPlugin("tcp", "plugins/iaas/iaas")
+	g_PluginIaas = pingo.NewPlugin("tcp", filepath.Join(nan.Config().CommonBaseDir, "plugins/iaas/iaas"))
 	if g_PluginIaas == nil {
 		nan.ExitErrorf(0, "Failed to start plugin Iaas")
 	}
 
 	// LDAP
-	g_PluginLdap = pingo.NewPlugin("tcp", "plugins/ldap/ldap")
+	g_PluginLdap = pingo.NewPlugin("tcp", filepath.Join(nan.Config().CommonBaseDir, "/plugins/ldap/ldap"))
 	if g_PluginLdap == nil {
 		nan.ExitErrorf(0, "Failed to start plugin Ldap")
 	}
 
 	// Owncloud
-	g_PluginOwncloud = pingo.NewPlugin("tcp", "plugins/owncloud/owncloud")
+	g_PluginOwncloud = pingo.NewPlugin("tcp", filepath.Join(nan.Config().CommonBaseDir, "/plugins/owncloud/owncloud"))
 	if g_PluginOwncloud == nil {
 		nan.ExitErrorf(0, "Failed to start plugin Owncloud")
 	}
@@ -123,7 +110,7 @@ func SetupPlugins() {
 	err := g_PluginIaas.Call("Iaas.Configure", string(pluginIaasJsonParams), &resp)
 	if err != nil {
 		// TODO Clarify error and string output
-		Log("Error while configuring plugin Ldap : %s", err)
+		Log("Error while configuring plugin Iaas : %s", err)
 	}
 	Log("Start plugin Iaas : DONE")
 
@@ -142,20 +129,6 @@ func SetupPlugins() {
 
 	Log("Start plugin Owncloud")
 	g_PluginOwncloud.Start()
-
-	pluginOwncloudJsonParams, err := json.Marshal(nan.Config().Plugins["Owncloud"])
-	if err != nil {
-		LogError("Failed to unmarshall Owncloud plugin params")
-		ExitError(nan.ErrConfigError)
-	}
-
-	err = g_PluginOwncloud.Call("Owncloud.Configure", string(pluginOwncloudJsonParams), &resp)
-	if err != nil {
-		// TODO Clarify error and string output
-		LogError("Error while configuring plugin Owncloud : %s", err)
-		ExitError(nan.ErrPluginError)
-	}
-
 	Log("Start plugin Owncloud : DONE")
 }
 
