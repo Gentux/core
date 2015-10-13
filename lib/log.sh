@@ -1,4 +1,5 @@
-# Nanocloud community -- transform any application into SaaS solution
+# Nanocloud Community, a comprehensive platform to turn any application
+# into a cloud solution.
 #
 # Copyright (C) 2015 Nanocloud Software
 #
