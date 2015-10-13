@@ -9,6 +9,13 @@ import (
 	"net/http"
 )
 
+type NoArgs struct {
+}
+
+type DefaultReply struct {
+	Result bool
+}
+
 func StaticHandler(w http.ResponseWriter, pRequest *http.Request) {
 
 	url := ""
@@ -31,6 +38,7 @@ func RunServer() {
 	pRpcServer := rpc.NewServer()
 	pRpcServer.RegisterCodec(json.NewCodec(), "application/json")
 	pRpcServer.RegisterService(new(ServiceUsers), "")
+	pRpcServer.RegisterService(new(ServiceApplications), "")
 
 	http.Handle("/rpc", pRpcServer)
 
