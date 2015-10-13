@@ -13,8 +13,6 @@ then
   _CP=cp
 fi
 
-pwd
-
 echo $DESC haptic
 $_CP ./haptic $DEST
 $_CP ./plugins/ldap/ldap $DEST/plugins/ldap/ldap

@@ -1,0 +1,50 @@
+{
+    "Role" : "proxy",
+
+    "Debug" : true,
+
+    "LogFilePath" : "haptic.log",
+
+    "CommonBaseDir" : "/path/to/zeroinstall/",
+
+    "Database" : {
+        "type" : "mysql",
+        "ConnectionString" : "user:password@tcp(127.0.0.1:3306)/guacamole?charset=utf8",
+    },
+    "ConsulPath" : "/var/nanocloud/cluster/consul/consul",
+
+    "Proxy" : {
+
+        "FrontEndRootDir" : "/path/to/frontend",
+
+        "MaxNumRegistrations" : 4,
+        "MaxNumAccounts" : 3,
+        "NumRetries" : 3,
+        "SleepDurationInSecs" : 20,
+
+        "offTacServer" : "nanocloud",
+        "offWinExe" : "/home/nanocloud/v2/winexe-static"
+    },
+
+    "Plugins" : {
+        "Ldap" : {
+            "serverUrl": "ldaps://127.0.0.1",
+            "username": "CN=Administrator,CN=Users,DC=intra,DC=nanocloud,DC=com",
+            "password": "secret",
+            "scriptsDir": "/path/to/plugins/ldap/"
+        },
+        "Owncloud" : {
+            "protocol" : "https",
+            "url"      : "domain.com/drive",
+            "login"    : "drive_admin",
+            "password" : "secr3t"
+        }
+    },
+
+    "OnActivate" : [
+
+        { "Talend" : "TAC" },
+
+        { "Owncloud" : "CreateUser" }
+    ]
+}

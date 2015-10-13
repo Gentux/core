@@ -1,40 +1,45 @@
 # SHELL = /bin/bash
 
-owncloud: ./plugins/owncloud/owncloud
+.DEFAULT_GOAL := haptic
 
-./plugins/owncloud/owncloud: ./plugins/owncloud/main.go
-	go build -o ./plugins/owncloud/owncloud nanocloud.com/zeroinstall/plugins/owncloud
+owncloud: ./bin/haptic/plugins/owncloud/owncloud
 
-ldap: ./plugins/ldap/ldap
+./bin/haptic/plugins/owncloud/owncloud: ./plugins/owncloud/main.go
+	go build -o ./bin/haptic/plugins/owncloud/owncloud nanocloud.com/zeroinstall/plugins/owncloud
 
-./plugins/ldap/ldap: ./plugins/ldap/main.go
-	go build -o ./plugins/ldap/ldap nanocloud.com/zeroinstall/plugins/ldap
+ldap: ./bin/haptic/plugins/ldap/ldap
 
-haptic: ldap owncloud ./agent/haptic/haptic
+./bin/haptic/plugins/ldap/ldap: ./plugins/ldap/main.go
+	go build -o ./bin/haptic/plugins/ldap/ldap nanocloud.com/zeroinstall/plugins/ldap
 
-./agent/haptic/haptic:
-	go build -o ./agent/haptic/haptic nanocloud.com/zeroinstall/agent/haptic
+haptic: ldap owncloud ./bin/haptic/haptic
+
+./bin/haptic/haptic:
+	go build -o ./bin/haptic/haptic nanocloud.com/zeroinstall/agent/haptic
 
 dev: haptic
-	mkdir -p ./agent/haptic/plugins
-	mkdir -p ./agent/haptic/plugins/ldap
-	mkdir -p ./agent/haptic/plugins/owncloud
+	mkdir -p ./bin/haptic/plugins
+	mkdir -p ./bin/haptic/plugins/ldap
+	mkdir -p ./bin/haptic/plugins/owncloud
 
-	cp ./plugins/ldap/ldap ./agent/haptic/plugins/ldap/
-	@ if [ ! -f ./agent/haptic/plugins/ldap/config.json ]; then \
-		echo "One time creation of config file: agent/haptic/plugins/ldap/config.json" ; \
-		cp ./plugins/ldap/config.json ./agent/haptic/plugins/ldap/config.json; \
+	#cp ./plugins/ldap/ldap ./agent/haptic/plugins/ldap/
+	@ if [ ! -f ./bin/haptic/plugins/ldap/config.json ]; then \
+		echo "One time creation of config file: .bin/haptic/plugins/ldap/config.json" ; \
+		cp ./plugins/ldap/config.json.sample ./bin/haptic/plugins/ldap/config.json; \
 	fi
 
-	cp ./plugins/owncloud/owncloud ./agent/haptic/plugins/owncloud/
-	@ if [ ! -f ./agent/haptic/plugins/owncloud/config.json ]; then \
-		echo "One time creation of config file: agent/haptic/plugins/owncloud/config.json" ; \
-		cp ./plugins/owncloud/config.json ./agent/haptic/plugins/owncloud/config.json; \
+	# cp ./plugins/owncloud/owncloud ./agent/haptic/plugins/owncloud/
+	@ if [ ! -f ./bin/haptic/plugins/owncloud/config.json ]; then \
+		echo "One time creation of config file: ./bin/haptic/plugins/owncloud/config.json" ; \
+		cp ./plugins/owncloud/config.json.sample ./bin/haptic/plugins/owncloud/config.json; \
 	fi
 
 #echo "Copying config.json to: ./agent/haptic/plugins/owncloud/config.json"; \
 
 clean:
+	rm ./bin/haptic/haptic
+	rm ./bin/haptic/plugins/ldap/ldap
+	rm ./bin/haptic/plugins/owncloud/owncloud
 	go clean nanocloud.com/zeroinstall/plugins/owncloud
 	go clean nanocloud.com/zeroinstall/plugins/ldap
 	go clean nanocloud.com/zeroinstall/agent/haptic
