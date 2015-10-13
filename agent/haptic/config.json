@@ -11,7 +11,6 @@
         "type" : "mysql",
         "ConnectionString" : "user:password@tcp(127.0.0.1:3306)/guacamole?charset=utf8",
     },
-    "ConsulPath" : "/var/nanocloud/cluster/consul/consul",
 
     "Proxy" : {
 
@@ -22,8 +21,6 @@
         "NumRetries" : 3,
         "SleepDurationInSecs" : 20,
 
-        "offTacServer" : "nanocloud",
-        "offWinExe" : "/home/nanocloud/v2/winexe-static"
     },
 
     "Plugins" : {

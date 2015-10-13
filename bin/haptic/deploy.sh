@@ -1,10 +1,11 @@
 #!/bin/bash
 
-# ./build.sh
+scriptPath=`readlink -f $0̀`
+dirPath=`dirname $scriptPath`
 
 DESC=Uploading
 DEST=esi-proxy:/home/nanosoft/0.2
-_CP=scp
+_CP="scp -q"
 
 if [[ $1 == "local" ]]
 then
@@ -13,11 +14,12 @@ then
   _CP=cp
 fi
 
-echo $DESC haptic
-$_CP ./haptic $DEST
-$_CP ./plugins/ldap/ldap $DEST/plugins/ldap/ldap
+#echo $DESC $dirPath/haptic
+ 
+# ls -l ${dirPath}/haptic
+
+$_CP ${dirPath}/haptic $DEST
+$_CP ${dirPath}/plugins/ldap/ldap $DEST/plugins/ldap/ldap
 # $_CP ./plugins/owncloud/owncloud $DEST/plugins/owncloud/owncloud
 
-$_CP -r ./public $DEST
-
-
+# $_CP -r $dirPath/public $DEST
