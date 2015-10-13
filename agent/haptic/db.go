@@ -385,3 +385,28 @@ func (p Db) GetActivatedUsersInfo(pResults *[]ActiveTacUserInfo) *nan.Err {
 
 	return nan.ErrFrom(e)
 }
+
+func (p Db) GetStats() ([]Stat, *nan.Err) {
+	var (
+		stat  Stat
+		stats []Stat
+	)
+
+	e := g_Db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte("stats"))
+		if bucket == nil {
+			return errors.New("Bucket 'stats' doesn't exist")
+		}
+
+		cursor := bucket.Cursor()
+		for key, value := cursor.First(); key != nil; key, value = cursor.Next() {
+			stat = Stat{}
+			json.Unmarshal(value, &stat)
+			stats = append(stats, stat)
+		}
+
+		return nil
+	})
+
+	return stats, nan.ErrFrom(e)
+}
