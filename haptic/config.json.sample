@@ -7,11 +7,15 @@
 
     "CommonBaseDir" : "/path/to/zeroinstall/",
 
-    "Database" : {
-        "type" : "mysql",
-        "ConnectionString" : "user:password@tcp(127.0.0.1:3306)/guacamole?charset=utf8"
+    "AdminUser": {
+        "Email": "admin@nanocloud.com",
+        "Password": "admin"
     },
-    "ConsulPath" : "/var/nanocloud/cluster/consul/consul",
+
+    "Database" : {
+        "type" : "bolt",
+        "ConnectionString" : "users.db
+    },
 
     "Proxy" : {
 
@@ -26,14 +30,25 @@
         "offWinExe" : "/home/nanocloud/v2/winexe-static"
     },
 
-    "AppServer" : {
-        "User" : "Administrator",
-        "Server" : "10.20.12.20",
-        "Port": "1119",
-        "Password": "Secr3t"
+    "Apps" : {
+
+        "AppServer" : {
+            "User" : "Administrator",
+            "Server" : "10.0.0.42",
+            "SSHPort": "22",
+            "RDPPort": "3389",
+            "Password": "Secr3t"
+
+            "WindowsDomain": "intra.nanocloud.com",
+            "XMLConfigurationFile": "/tmp/guacxml.xml"
+        }
     },
 
     "Plugins" : {
+        "Iaas" : {
+            "Url": "http://your.physical.host",
+            "Port": "8082"
+        },
         "Ldap" : {
             "serverUrl": "ldaps://127.0.0.1",
             "username": "CN=Administrator,CN=Users,DC=intra,DC=nanocloud,DC=com",
@@ -42,9 +57,9 @@
         },
         "Owncloud" : {
             "protocol" : "https",
-            "url"      : "domain.com/drive",
-            "login"    : "drive_admin",
-            "password" : "secr3t"
+            "url"      : "nanocloud.com/drive",
+            "login"    : "owncloud_admin",
+            "password" : "secret"
         }
     },
 
