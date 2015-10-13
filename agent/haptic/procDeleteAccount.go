@@ -16,17 +16,17 @@ var ()
 // - [OPTIONAL] : free application specific resources + storage
 // - DeleteUser (LDAP, AD)
 // ========================================================================================================================
-func DeleteUser(accountParams AccountParams) {
+func DeleteUser(accountParams AccountParams) *nan.Err {
 
 	Log("Starting procedure DeleteUser")
 
 	ValidateDeleteUserParams(accountParams)
 
 	var bRegistered, bActive bool
-	var err error
+	var err *nan.Err
 
 	if bActive, err = g_Db.IsUserActivated(accountParams.Email); err != nil {
-		ExitError(ErrIssueWithAccountsDb)
+		return LogErrorCode(ErrIssueWithAccountsDb)
 	} else {
 		// TODO insert here freeing of application specific resources
 		//G_ProcCreateWinUser.Undo(accountParams)
@@ -36,7 +36,7 @@ func DeleteUser(accountParams AccountParams) {
 	// thus not visible in db anymore, but still with remaining files inside studio directory, that need to be all deleted
 
 	if bRegistered, err = g_Db.IsUserRegistered(accountParams.Email); err != nil {
-		ExitError(ErrIssueWithAccountsDb)
+		return LogErrorCode(ErrIssueWithAccountsDb)
 	} else {
 		G_ProcRegisterProxyUser.Undo()
 	}
@@ -44,13 +44,14 @@ func DeleteUser(accountParams AccountParams) {
 	if bActive && !bRegistered {
 		LogError("Corrupt account cleaned up : was ACTIVE but didn't look NOT REGISTERED")
 	} else if !bRegistered && !bActive {
-		ExitError(ErrAccountDoesNotExist)
+		return LogErrorCode(ErrAccountDoesNotExist)
 	}
 
-	user, err := g_Db.GetUser(accountParams.Email)
-
-	g_Db.DeleteUser(user)
-	nan.PrintOk(OkAccountBeingDeleted)
+	if user, err := g_Db.GetUser(accountParams.Email); err != nil {
+		return LogErrorCode(err)
+	} else {
+		return g_Db.DeleteUser(user)
+	}
 }
 
 // ========================================================================================================================
@@ -63,6 +64,6 @@ func ValidateDeleteUserParams(accountParams AccountParams) {
 	nan.Debug("Verifying parameters to delete %s account", accountParams.Email)
 
 	if !nan.ValidEmail(accountParams.Email) {
-		ExitError(nan.ErrPbWithEmailFormat)
+		LogErrorCode(nan.ErrPbWithEmailFormat)
 	}
 }

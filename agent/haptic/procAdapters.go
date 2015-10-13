@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/boltdb/bolt"
+
+	nan "nanocloud.com/zeroinstall/lib/libnan"
 )
 
 // We wrap sql.DB in a user struct to which we can add our own methods
@@ -17,7 +19,7 @@ var (
 	adapter adapter_t
 )
 
-func (o adapter_t) RegisterUser(_Firstname, _Lastname, _Email, _Password string) error {
+func (o adapter_t) RegisterUser(_Firstname, _Lastname, _Email, _Password string) *nan.Err {
 
 	var params AccountParams = AccountParams{
 
@@ -26,23 +28,18 @@ func (o adapter_t) RegisterUser(_Firstname, _Lastname, _Email, _Password string)
 		Email:     _Email,
 		Password:  _Password}
 
-	RegisterUser(params)
-
-	return nil
+	return RegisterUser(params)
 }
 
-func (o adapter_t) ActivateUser(_Email string) error {
+func (o adapter_t) ActivateUser(_Email string) *nan.Err {
 
 	var params AccountParams = AccountParams{
 		Email: _Email}
 
-	ActivateUser(params)
-
-	return nil
+	return ActivateUser(params)
 }
 
-func (o adapter_t) GetUsers() ([]User, error) {
-
+func (o adapter_t) GetUsers() ([]User, *nan.Err) {
 	return ListUsers(), nil
 }
 

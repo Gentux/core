@@ -45,10 +45,11 @@ var (
 	g_PluginOwncloud *pingo.Plugin
 
 	// Aliases useful for this package so that we don't have to have to prefix them with nan all the time
-	ExitOk    = nan.ExitOk
-	ExitError = nan.ExitError
-	Log       = nan.Log
-	LogError  = nan.LogError
+	ExitOk       = nan.ExitOk
+	ExitError    = nan.ExitError
+	Log          = nan.Log
+	LogError     = nan.LogError
+	LogErrorCode = nan.LogErrorCode
 )
 
 // TODO remove hardcoded : intra.nanocloud.com/Administrator%password", "//10.20.12.10
@@ -87,19 +88,22 @@ func SetupPlugins() {
 	// Iaas
 	g_PluginIaas = pingo.NewPlugin("tcp", filepath.Join(nan.Config().CommonBaseDir, "plugins/iaas/iaas"))
 	if g_PluginIaas == nil {
-		nan.ExitErrorf(0, "Failed to start plugin Iaas")
+		nan.LogError("Failed to start plugin Iaas")
+		return
 	}
 
 	// LDAP
 	g_PluginLdap = pingo.NewPlugin("tcp", filepath.Join(nan.Config().CommonBaseDir, "/plugins/ldap/ldap"))
 	if g_PluginLdap == nil {
-		nan.ExitErrorf(0, "Failed to start plugin Ldap")
+		nan.LogError("Failed to start plugin Ldap")
+		return
 	}
 
 	// Owncloud
 	g_PluginOwncloud = pingo.NewPlugin("tcp", filepath.Join(nan.Config().CommonBaseDir, "/plugins/owncloud/owncloud"))
 	if g_PluginOwncloud == nil {
-		nan.ExitErrorf(0, "Failed to start plugin Owncloud")
+		nan.LogError("Failed to start plugin Owncloud")
+		return
 	}
 
 	Log("Start plugin Iaas")
@@ -111,8 +115,8 @@ func SetupPlugins() {
 	pluginIaasJsonParams, _ = json.Marshal(nan.Config().Plugins["Iaas"])
 	err := g_PluginIaas.Call("Iaas.Configure", string(pluginIaasJsonParams), &resp)
 	if err != nil {
-		// TODO Clarify error and string output
-		Log("Error while configuring plugin Iaas : %s", err)
+		LogError("failed to configure plugin Iaas : %s", err)
+		return
 	}
 	Log("Start plugin Iaas : DONE")
 
@@ -124,8 +128,8 @@ func SetupPlugins() {
 	pluginLdapJsonParams, _ = json.Marshal(nan.Config().Plugins["Ldap"])
 	err = g_PluginLdap.Call("Ldap.Configure", string(pluginLdapJsonParams), &resp)
 	if err != nil {
-		// TODO Clarify error and string output
-		Log("Error while configuring plugin Ldap : %s", err)
+		LogError("failed to configure plugin Ldap : %s", err)
+		return
 	}
 	Log("Start plugin Ldap : DONE")
 

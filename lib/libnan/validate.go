@@ -41,7 +41,7 @@ func ValidEmail(address string) bool {
 	}
 
 	if !matched {
-		Log("Failed to match conformation rules for email %s", address)
+		LogError("Failed to match conformation rules for email %s", address)
 	}
 
 	return matched

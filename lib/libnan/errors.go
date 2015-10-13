@@ -13,7 +13,7 @@ const ()
 // TYPES
 // ===================================================================================================
 
-type Error struct {
+type Err struct {
 	Code    int
 	Message string
 	Details string
@@ -21,13 +21,34 @@ type Error struct {
 	jsonBytes []byte `json:"-"`
 }
 
-func NewExitCode(_code int, _msg string) *Error {
-	p := &Error{Code: _code, Message: _msg}
+type errer interface {
+	Error() string
+}
+
+func NewErr() *Err {
+	return NewErrf("undefined")
+}
+
+func ErrFrom(e errer) *Err {
+	if e == nil {
+		return nil
+	} else {
+		return NewExitCode(1, e.Error())
+	}
+}
+
+func NewErrf(_msg string, _args ...interface{}) *Err {
+	msg := fmt.Sprintf(_msg, _args...)
+
+	return &Err{Code: 0, Message: msg}
+}
+
+func NewExitCode(_code int, _msg string) *Err {
+	p := &Err{Code: _code, Message: _msg}
 
 	jsonBytes, err := json.Marshal(p)
 	if err != nil {
 		log.Printf("Error when json marshalling : { %d, %s }", _code, _msg)
-		os.Exit(-1)
 	}
 
 	p.jsonBytes = jsonBytes
@@ -35,23 +56,23 @@ func NewExitCode(_code int, _msg string) *Error {
 	return p
 }
 
-func (o Error) Ok() bool {
+func (o Err) Ok() bool {
 	return o.Code == 1
 }
 
-func (o Error) Failed() bool {
+func (o Err) Failed() bool {
 	return o.Code != 1
 }
 
-func (p *Error) ToJson() string {
+func (p *Err) ToJson() string {
 	return string(p.jsonBytes)
 }
 
-func (p *Error) ToString() string {
+func (p *Err) ToString() string {
 	return p.Message
 }
 
-func (p *Error) Unmarshal(s string) bool {
+func (p *Err) Unmarshal(s string) bool {
 	if err := json.Unmarshal([]byte(s), p); err != nil {
 		LogError("Failed to unmarshal exit code from string: %s", s)
 		return false
@@ -59,33 +80,27 @@ func (p *Error) Unmarshal(s string) bool {
 	return true
 }
 
-func PrintErrorJson(_pError *Error) {
+func PrintErrorJson(_pError *Err) {
 	fmt.Println(_pError.ToJson())
 }
 
-func PrintOk(_pExitCode *Error) {
+func PrintOk(_pExitCode *Err) {
 	Log(_pExitCode.Message)
 	fmt.Println(_pExitCode.ToJson())
 }
 
-func ExitOk(_pExitCode *Error) {
+func ExitOk(_pExitCode *Err) {
 	Log(_pExitCode.Message)
 	fmt.Println(_pExitCode.ToJson())
 
 	os.Exit(0)
 }
 
-func ExitError(_pExitCode *Error) {
+func ExitError(_pExitCode *Err) {
 	LogError(_pExitCode.Message)
 	fmt.Println(_pExitCode.ToJson())
 
 	os.Exit(-1)
-}
-
-func Errorf(_msg string, _args ...interface{}) *Error {
-	msg := fmt.Sprintf(_msg, _args...)
-
-	return &Error{Code: 0, Message: msg}
 }
 
 func ExitErrorf(_code int, _msg string, _args ...interface{}) {
@@ -93,7 +108,7 @@ func ExitErrorf(_code int, _msg string, _args ...interface{}) {
 
 	LogError(msg)
 
-	p := &Error{Code: _code, Message: msg}
+	p := &Err{Code: _code, Message: msg}
 
 	jsonBytes, err := json.Marshal(p)
 	if err != nil {
@@ -116,11 +131,8 @@ var (
 	ErrOpFailed             = NewExitCode(4, "Operation failed: resource is not in the state required to perform the operation")
 	ErrPbWithEmailFormat    = NewExitCode(2, "Problem with email format")
 	ErrPasswordNonCompliant = NewExitCode(3, "The password does not respect the security policy")
-	ErrPasswordNotUpdated   = NewExitCode(5, "Update password failed")
 	ErrFilesystemError      = NewExitCode(16, "Filesystem error : failed to create/delete file/directory")
 	ErrSystemError          = NewExitCode(17, "System error")
-	ErrConfigError          = NewExitCode(18, "Error in configuration file")
-	ErrPluginError          = NewExitCode(19, "Plugin communication error")
 	ErrConsulNotFound       = NewExitCode(100, "Could not access Consul executable")
 	ErrCouldNotPingVm       = NewExitCode(101, "Could not ping VM")
 	ErrJsonParsingError     = NewExitCode(103, "Error when parsing JSON, see TAC log")

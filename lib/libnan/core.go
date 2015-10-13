@@ -102,7 +102,7 @@ func Log(_str string, _args ...interface{}) {
 	}
 }
 
-func LogError(_str string, _args ...interface{}) {
+func LogError(_str string, _args ...interface{}) *Err {
 	str := fmt.Sprintf(_str, _args...)
 
 	_log("ERROR", str)
@@ -110,25 +110,27 @@ func LogError(_str string, _args ...interface{}) {
 	if Config().Debug {
 		fmt.Println(str)
 	}
+
+	return &Err{Message: str}
 }
 
-func LogErrorCode(pError *Error) *Error {
+func LogErrorCode(pError *Err) *Err {
 	_log("ERROR", pError.Message)
 	return pError
 }
 
 type ProcedureStruct struct {
-	Result *Error
+	Result *Err
 }
 
-func (o ProcedureStruct) GetResult() *Error {
+func (o ProcedureStruct) GetResult() *Err {
 	return o.Result
 }
 
 type Procedure interface {
-	Do() *Error
-	GetResult() *Error
-	Undo() *Error
+	Do() *Err
+	GetResult() *Err
+	Undo() *Err
 }
 
 func UndoIfFailed(proc Procedure) {

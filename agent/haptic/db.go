@@ -28,9 +28,10 @@ func InitialiseDb() {
 		return
 	}
 
-	g_Db.DB, err = bolt.Open(nan.Config().Database.ConnectionString, 0777, nil)
+	g_Db.DB, err = bolt.Open(nan.Config().CommonBaseDir+"/"+nan.Config().Database.ConnectionString, 0777, nil)
 	if err != nil {
-		ExitError(ErrIssueWithAccountsDb)
+		LogErrorCode(ErrIssueWithAccountsDb)
+		return
 	}
 
 	err = g_Db.Update(func(tx *bolt.Tx) error {
@@ -38,7 +39,8 @@ func InitialiseDb() {
 		return nil
 	})
 	if err != nil {
-		ExitError(ErrIssueWithAccountsDb)
+		LogErrorCode(ErrIssueWithAccountsDb)
+		return
 	}
 }
 
@@ -57,7 +59,7 @@ func ShutdownDb() {
 // ============================================================================================================
 
 // Function:
-func (p Db) GetUser(Email string) (User, error) {
+func (p Db) GetUser(Email string) (User, *nan.Err) {
 	var user User
 
 	e := g_Db.View(func(tx *bolt.Tx) error {
@@ -77,10 +79,10 @@ func (p Db) GetUser(Email string) (User, error) {
 		return nil
 	})
 
-	return user, e
+	return user, nan.ErrFrom(e)
 }
 
-func (p Db) GetUsers() ([]User, error) {
+func (p Db) GetUsers() ([]User, *nan.Err) {
 	var (
 		user  User
 		users []User
@@ -102,11 +104,11 @@ func (p Db) GetUsers() ([]User, error) {
 		return nil
 	})
 
-	return users, e
+	return users, nan.ErrFrom(e)
 }
 
-func (p Db) AddUser(user User) error {
-	return g_Db.View(func(tx *bolt.Tx) error {
+func (p Db) AddUser(user User) *nan.Err {
+	e := g_Db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte("users"))
 		if bucket == nil {
 			return errors.New("Bucket 'users' doesn't exist")
@@ -117,10 +119,12 @@ func (p Db) AddUser(user User) error {
 
 		return e
 	})
+
+	return nan.ErrFrom(e)
 }
 
-func (p Db) DeleteUser(user User) error {
-	return g_Db.Update(func(tx *bolt.Tx) error {
+func (p Db) DeleteUser(user User) *nan.Err {
+	e := g_Db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte("users"))
 		if bucket == nil {
 			return errors.New("Bucket 'users' doesn't exist")
@@ -128,9 +132,11 @@ func (p Db) DeleteUser(user User) error {
 
 		return bucket.Delete([]byte(user.Email))
 	})
+
+	return nan.ErrFrom(e)
 }
 
-func (p Db) IsUserRegistered(Email string) (bool, error) {
+func (p Db) IsUserRegistered(Email string) (bool, *nan.Err) {
 	var result bool = false
 
 	e := g_Db.View(func(tx *bolt.Tx) error {
@@ -150,10 +156,10 @@ func (p Db) IsUserRegistered(Email string) (bool, error) {
 		return nil
 	})
 
-	return result, e
+	return result, nan.ErrFrom(e)
 }
 
-func (p Db) GetSamFromEmail(Email string) (string, error) {
+func (p Db) GetSamFromEmail(Email string) (string, *nan.Err) {
 	var (
 		user User
 		sam  string
@@ -177,10 +183,10 @@ func (p Db) GetSamFromEmail(Email string) (string, error) {
 		return nil
 	})
 
-	return sam, e
+	return sam, nan.ErrFrom(e)
 }
 
-func (p Db) CountRegisteredUsers() (int, error) {
+func (p Db) CountRegisteredUsers() (int, *nan.Err) {
 	var count int = 0
 
 	e := g_Db.View(func(tx *bolt.Tx) error {
@@ -197,10 +203,10 @@ func (p Db) CountRegisteredUsers() (int, error) {
 		return nil
 	})
 
-	return count, e
+	return count, nan.ErrFrom(e)
 }
 
-func (p Db) CountActiveUsers() (int, error) {
+func (p Db) CountActiveUsers() (int, *nan.Err) {
 	var (
 		user  User
 		count int = 0
@@ -223,10 +229,10 @@ func (p Db) CountActiveUsers() (int, error) {
 		return nil
 	})
 
-	return count, e
+	return count, nan.ErrFrom(e)
 }
 
-func (p Db) IsUserActivated(Email string) (bool, error) {
+func (p Db) IsUserActivated(Email string) (bool, *nan.Err) {
 	var (
 		user   User
 		result bool = false
@@ -252,7 +258,7 @@ func (p Db) IsUserActivated(Email string) (bool, error) {
 		return nil
 	})
 
-	return result, e
+	return result, nan.ErrFrom(e)
 }
 
 func (p Db) UpdateUserSamForEmail(Email, Sam string) bool {
@@ -285,15 +291,15 @@ func (p Db) UpdateUserSamForEmail(Email, Sam string) bool {
 	return result
 }
 
-func (p Db) GetRegisteredUsersInfo(pResults *[]RegisteredUserInfo) error {
+func (p Db) GetRegisteredUsersInfo(pResults *[]RegisteredUserInfo) *nan.Err {
 	var user User
 
 	*pResults = []RegisteredUserInfo{}
 
-	return g_Db.View(func(tx *bolt.Tx) error {
+	e := g_Db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte("users"))
 		if bucket == nil {
-			return errors.New("Bucket 'users' doesn't exist")
+			return errors.New("DB bucket 'users' doesn't exist")
 		}
 
 		cursor := bucket.Cursor()
@@ -308,14 +314,16 @@ func (p Db) GetRegisteredUsersInfo(pResults *[]RegisteredUserInfo) error {
 
 		return nil
 	})
+
+	return nan.ErrFrom(e)
 }
 
-func (p Db) GetActivatedUsersInfo(pResults *[]ActiveTacUserInfo) error {
+func (p Db) GetActivatedUsersInfo(pResults *[]ActiveTacUserInfo) *nan.Err {
 	var user User
 
 	*pResults = []ActiveTacUserInfo{}
 
-	return g_Db.View(func(tx *bolt.Tx) error {
+	e := g_Db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte("users"))
 		if bucket == nil {
 			return errors.New("Bucket 'users' doesn't exist")
@@ -335,4 +343,6 @@ func (p Db) GetActivatedUsersInfo(pResults *[]ActiveTacUserInfo) error {
 
 		return nil
 	})
+
+	return nan.ErrFrom(e)
 }

@@ -43,7 +43,8 @@ func ListRegisteredUsers() {
 
 	var regUsersInfo []RegisteredUserInfo
 
-	if !g_Db.GetRegisteredUsersInfo(&regUsersInfo) {
+	if err := g_Db.GetRegisteredUsersInfo(&regUsersInfo); err != nil {
+		LogErrorCode(err)
 		return
 	}
 
@@ -75,12 +76,13 @@ func ListActiveUsers() {
 
 	var activeTacUsersInfo []ActiveTacUserInfo
 
-	if g_Db.GetActivatedUsersInfo(&activeTacUsersInfo) {
+	if err := g_Db.GetActivatedUsersInfo(&activeTacUsersInfo); err != nil {
+		LogErrorCode(err)
+		return
+	}
 
-		for _, v := range activeTacUsersInfo {
-			fmt.Println(v)
-		}
-
+	for _, v := range activeTacUsersInfo {
+		fmt.Println(v)
 	}
 
 }

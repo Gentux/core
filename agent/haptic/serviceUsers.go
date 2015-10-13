@@ -18,17 +18,14 @@ type GetUsersListReply struct {
 
 func (p *ServiceUsers) GetList(r *http.Request, args *NoArgs, reply *GetUsersListReply) error {
 
-	var (
-		users []User
-		e     error
-	)
+	if users, err := g_Db.GetUsers(); err != nil {
+		LogErrorCode(err)
+	} else {
 
-	users, e = g_Db.GetUsers()
-	if e != nil {
-		log.Println(e)
+		reply.Users = users
+
+		log.Println(users)
 	}
-
-	reply.Users = users
 
 	return nil
 }
