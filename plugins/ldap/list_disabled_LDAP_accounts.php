@@ -1,22 +1,8 @@
 <?php
 
-// Configuration
-$ldap_server = "ldaps://10.20.12.20";
-$ldap_user   = "CN=Administrator,CN=Users,DC=intra,DC=nanocloud,DC=com";
-$ldap_pass   = "password";
+include './connection.php';
 
-// Connection
-$ldap_connection = ldap_connect($ldap_server) or die('Unable to connect to LDAP server');
-
-// We have to set this option for the version of Active Directory we are using.
-ldap_set_option($ldap_connection, LDAP_OPT_PROTOCOL_VERSION, 3) or die('Unable to set LDAP protocol version');
-ldap_set_option($ldap_connection, LDAP_OPT_REFERRALS, 0); // We need this for doing an LDAP search.    
-
-// Binding
-ldap_bind($ldap_connection, $ldap_user, $ldap_pass) or die('Unable to bind to LDAP server');
-
-// Our DN
-$ldap_base_dn = 'OU=TalendUsers,DC=intra,DC=nanocloud,DC=com';
+$ldap_connection = connect_AD();
 
 // This filter will get all the users with disabled account
 $search_filter = '(&(objectClass=User)(userAccountControl:1.2.840.113556.1.4.803:=2))';
@@ -44,7 +30,5 @@ for ($i=0; $i<$info["count"]; $i++) {
   echo "User is " . $status . "\n";
 }
 
-// Leaving the LDAP server
-ldap_unbind($ldap_connection) or die('Unable to close LDAP connection');
-
+disconnect_AD($ldap_connection);
 ?>
