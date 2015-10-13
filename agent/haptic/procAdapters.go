@@ -75,3 +75,10 @@ func (o adapter_t) GetApplications() (string, error) {
 
 	return ListApplications(), nil
 }
+
+func (o adapter_t) UnpublishApp(Alias string) error {
+
+	UnpublishApplication(Alias)
+
+	return nil
+}

@@ -51,13 +51,15 @@ func (p *ServiceApplications) UpdateApplication(r *http.Request, args *RegisterA
 
 // ====================================================================================================
 
-type DeleteApplicationParam struct {
-	Email string
+type UnpublishApplicationParam struct {
+	ApplicationName string
 }
 
-func (p *ServiceApplications) DeleteApplication(r *http.Request, args *DeleteApplicationParam, reply *DefaultReply) error {
+func (p *ServiceApplications) UnpublishApplication(r *http.Request, args *UnpublishApplicationParam, reply *DefaultReply) error {
 
-	// TODO Implement this
+
+	adapter.UnpublishApp(args.ApplicationName)
+	reply.Result = true
 
 	return nil
 }

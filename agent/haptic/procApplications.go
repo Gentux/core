@@ -17,9 +17,11 @@ import (
 // =====
 
 type ApplicationParams struct {
-	DisplayName  string
-	IconContents []uint8
-	FilePath     string
+	CollectionName string
+	Alias          string
+	DisplayName    string
+	IconContents   []uint8
+	FilePath       string
 }
 
 // ========================================================================================================================
@@ -56,4 +58,33 @@ func ListApplications() string {
 
 	res, _ = json.Marshal(applications)
 	return string(res)
+}
+
+// ========================================================================================================================
+// Procedure: UnpublishApplication
+//
+// Does:
+// - Unpublish specified applications from ActiveDirectory
+// ========================================================================================================================
+func UnpublishApplication(Alias string) {
+	fmt.Println(Alias)
+	var powershellCmd string
+
+	// Create MakeConfig instance with remote username, server address and path to private key.
+	ssh := &easyssh.MakeConfig{
+		User:     "Administrator",
+		Server:   "10.20.30.40",
+		Port:     "1119",
+		Password: "password",
+	}
+
+	// TODO Parametrize this
+	powershellCmd = fmt.Sprintf("powershell.exe -Command \"Remove-RDRemoteApp -Alias %s -CollectionName %s -Force\"", Alias, "winadapps")
+	fmt.Println(powershellCmd)
+
+	// Call Run method with command you want to run on remote server.
+	_, err := ssh.Run(powershellCmd)
+	if err != nil {
+		panic("Can't run remote command: " + err.Error())
+	}
 }
