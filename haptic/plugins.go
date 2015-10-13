@@ -44,8 +44,6 @@ func SetupPlugins() {
 
 		Log("Starting plugin %s", pluginName)
 
-		pPlugin.Start()
-
 		ok := false
 		var pluginJsonParams nan.PluginParams
 
