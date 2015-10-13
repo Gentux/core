@@ -15,8 +15,11 @@ mysqlDump.sql
 agent/haptic/haptic
 agent/haptic/plugins/ldap/ldap
 agent/haptic/plugins/owncloud/owncloud
+plugins/iaas/iaas
 plugins/ldap/ldap
 plugins/owncloud/owncloud
+bin/haptic/haptic
+bin/haptic/plugins/
 
 # Logging files
 agent/haptic/activity.log

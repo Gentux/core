@@ -23,22 +23,11 @@ haptic: iaas ldap owncloud ./bin/haptic/haptic
 ./bin/haptic/haptic:
 	go build -o ./bin/haptic/haptic nanocloud.com/zeroinstall/agent/haptic
 
-setup:
+dev: haptic
 	mkdir -p ./bin/haptic/plugins
 	mkdir -p ./bin/haptic/plugins/iaas
 	mkdir -p ./bin/haptic/plugins/ldap
 	mkdir -p ./bin/haptic/plugins/owncloud
-
-	echo "Installing go packages dependencies"
-	go get github.com/dullgiulio/pingo
-	go get golang.org/x/net/icmp
-	go get golang.org/x/net/internal/iana
-	go get golang.org/x/net/ipv4
-	go get github.com/boltdb/bolt
-	go get github.com/gorilla/rpc
-	go get github.com/gorilla/rpc/json
-	go get github.com/gorilla/securecookie
-	go get github.com/hypersleep/easyssh	
 
 	#cp ./plugins/iaas/iaas ./agent/haptic/plugins/iaas/
 	@ if [ ! -f ./bin/haptic/plugins/iaas/config.json ]; then \
@@ -52,8 +41,6 @@ setup:
 		cp ./plugins/ldap/config.json.sample ./bin/haptic/plugins/ldap/config.json; \
 	fi
 
-	cp ./plugins/ldap/*.php ./bin/haptic/plugins/ldap/;
-
 	# cp ./plugins/owncloud/owncloud ./agent/haptic/plugins/owncloud/
 	@ if [ ! -f ./bin/haptic/plugins/owncloud/config.json ]; then \
 		echo "One time creation of config file: ./bin/haptic/plugins/owncloud/config.json" ; \
@@ -61,9 +48,6 @@ setup:
 	fi
 
 #echo "Copying config.json to: ./agent/haptic/plugins/owncloud/config.json"; \
-
-serve:
-	./bin/haptic/haptic serve
 
 clean:
 	rm ./bin/haptic/haptic
