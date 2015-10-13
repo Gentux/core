@@ -1,0 +1,37 @@
+{
+    "Role" : "proxy",
+
+    "Debug" : true,
+
+    "LogFilePath" : "/home/fred/Nanocloud/Dev/Go/src/nanocloud/haptic/log/users.log",
+
+    "CommonBaseDir" : "/home/fred/Nanocloud/Dev/Go/src/nanocloud/haptic",
+
+    "ConsulPath" : "/var/nanocloud/cluster/consul/consul",
+
+    "Proxy" : {
+        "MaxNumRegistrations" : 4,
+        "MaxNumAccounts" : 3,
+        "NumRetries" : 3,
+        "SleepDurationInSecs" : 20,
+
+        "offTacServer" : "nanocloud",
+        "offWinExe" : "/home/nanocloud/v2/winexe-static"
+    },
+
+    "Plugins" : {
+        "Owncloud" : {
+            "protocol" : "https",
+            "url"      : "domain.com/drive",
+            "login"    : "drive_admin",
+            "password" : "secr3t"
+        }
+    },
+
+    "OnActivate" : [
+
+        { "Talend" : "TAC" },
+
+        { "Owncloud" : "CreateUser" }
+    ]
+}
