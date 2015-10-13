@@ -36,6 +36,13 @@ type ProxyConfig_t struct {
 	WinExe string
 }
 
+type AppServerConfig_t struct {
+	User     string
+	Server   string
+	Port     int
+	Password string
+}
+
 type Config_t struct {
 	// Role  string `json:"Role",omitempty`
 	// Debug bool   `json:"Debug",omitempty`
@@ -56,9 +63,10 @@ type Config_t struct {
 
 	ConsulPath string
 
-	Database DatabaseConfig_t
-	Proxy    ProxyConfig_t
-	Plugins  PluginsInfo_t
+	Database  DatabaseConfig_t
+	Proxy     ProxyConfig_t
+	AppServer AppServerConfig_t
+	Plugins   PluginsInfo_t
 }
 
 var (

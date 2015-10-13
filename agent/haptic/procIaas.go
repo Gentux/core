@@ -55,6 +55,28 @@ func DownloadWindowsVm() bool {
 }
 
 // ========================================================================================================================
+// Procedure: DownloadStatus
+//
+// Does:
+// - Return true if a download is in progress
+// ========================================================================================================================
+func DownloadStatus() bool {
+
+	var res string
+
+	err := g_PluginIaas.Call("Iaas.DownloadStatus", "", &res)
+	if err != nil {
+		fmt.Println("Error calling Iaas Plugin")
+	}
+
+	if res == "true" {
+		return true
+	} else {
+		return false
+	}
+}
+
+// ========================================================================================================================
 // Procedure: StartVm
 //
 // Does:

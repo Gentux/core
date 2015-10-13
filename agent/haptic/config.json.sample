@@ -26,6 +26,13 @@
         "offWinExe" : "/home/nanocloud/v2/winexe-static"
     },
 
+    "AppServer" : {
+        "User" : "Administrator",
+        "Server" : "10.20.12.20",
+        "Port": "1119",
+        "Password": "Secr3t"
+    },
+
     "Plugins" : {
         "Ldap" : {
             "serverUrl": "ldaps://127.0.0.1",

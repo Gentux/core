@@ -65,8 +65,9 @@ func (p *Iaas) ListRunningVm(jsonParams string, _outMsg *string) error {
 	var (
 		response struct {
 			Result struct {
-				AvailableVMNames []string
-				RunningVmNames   []string
+				AvailableVMNames   []string
+				RunningVmNames     []string
+				DownloadInProgress bool
 			}
 			Error string
 			Id    int
@@ -162,6 +163,46 @@ func (p *Iaas) DownloadVm(jsonParams string, _outMsg *string) error {
 		*_outMsg = "false"
 	}
 	return nil
+}
+
+func (p *Iaas) DownloadStatus(jsonParams string, _outMsg *string) error {
+	var (
+		response struct {
+			Result struct {
+				AvailableVMNames   []string
+				RunningVmNames     []string
+				DownloadInProgress bool
+			}
+			Error string
+			Id    int
+		}
+	)
+	jsonResponse, err := jsonRpcRequest(
+		fmt.Sprintf("%s:%s", g_IaasConfig.Url, g_IaasConfig.Port),
+		"Iaas.GetList",
+		nil,
+	)
+	if err != nil {
+		r := nan.NewExitCode(1, "ERROR: failed to contact Iaas API : "+err.Error())
+		log.Printf(r.Message) // for on-screen debug output
+		*_outMsg = r.ToJson() // return codes for IPC should use JSON as much as possible
+		return nil
+	}
+
+	err = json.Unmarshal([]byte(jsonResponse), &response)
+	if err != nil {
+		r := nan.NewExitCode(0, "ERROR: failed to unmarshal Iaas API response : "+err.Error())
+		log.Printf(r.Message) // for on-screen debug output
+		*_outMsg = r.ToJson() // return codes for IPC should use JSON as much as possible
+		return nil
+	}
+
+	if response.Result.DownloadInProgress {
+		*_outMsg = "true"
+	} else {
+		*_outMsg = "false"
+	}
+	return err
 }
 
 func (p *Iaas) StartVm(jsonParams string, _outMsg *string) error {

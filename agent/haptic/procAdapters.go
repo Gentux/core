@@ -88,6 +88,10 @@ func (o adapter_t) DownloadWindowsVm() (bool, error) {
 	return DownloadWindowsVm(), nil
 }
 
+func (o adapter_t) DownloadStatus() (bool, error) {
+	return DownloadStatus(), nil
+}
+
 func (o adapter_t) StartVm(vmName string) (bool, error) {
 	return StartVm(vmName), nil
 }

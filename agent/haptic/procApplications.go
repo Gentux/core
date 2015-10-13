@@ -4,8 +4,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/hypersleep/easyssh"
+
+	nan "nanocloud.com/zeroinstall/lib/libnan"
 )
 
 type ApplicationParams struct {
@@ -31,10 +34,10 @@ func ListApplications() string {
 
 	// Create MakeConfig instance with remote username, server address and path to private key.
 	ssh := &easyssh.MakeConfig{
-		User:     "Administrator",
-		Server:   "10.20.30.40",
-		Port:     "1119",
-		Password: "password",
+		User:     nan.Config().AppServer.User,
+		Server:   nan.Config().AppServer.Server,
+		Port:     strconv.Itoa(nan.Config().AppServer.Port),
+		Password: nan.Config().AppServer.Password,
 	}
 
 	// Call Run method with command you want to run on remote server.
@@ -68,10 +71,10 @@ func UnpublishApplication(Alias string) {
 
 	// Create MakeConfig instance with remote username, server address and path to private key.
 	ssh := &easyssh.MakeConfig{
-		User:     "Administrator",
-		Server:   "10.20.30.40",
-		Port:     "1119",
-		Password: "password",
+		User:     nan.Config().AppServer.User,
+		Server:   nan.Config().AppServer.Server,
+		Port:     strconv.Itoa(nan.Config().AppServer.Port),
+		Password: nan.Config().AppServer.Password,
 	}
 
 	// TODO Parametrize this

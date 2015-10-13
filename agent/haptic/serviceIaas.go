@@ -33,6 +33,14 @@ func (p *ServiceIaas) Download(r *http.Request, args *NoArgs, reply *RequestStat
 	return nil
 }
 
+func (p *ServiceIaas) DownloadStatus(r *http.Request, args *NoArgs, reply *RequestState) error {
+
+	requestState, _ := adapter.DownloadStatus()
+	reply.Success = requestState
+
+	return nil
+}
+
 type VmNameArgs struct {
 	VmName string
 }
