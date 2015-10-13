@@ -63,10 +63,10 @@ func CreateConnections() error {
 
 	// Create MakeConfig instance with remote username, server address and path to private key.
 	ssh := &easyssh.MakeConfig{
-		User:     nan.Config().AppServer.User,
-		Server:   nan.Config().AppServer.Server,
-		Port:     strconv.Itoa(nan.Config().AppServer.SSHPort),
-		Password: nan.Config().AppServer.Password,
+		User:     nan.Config().Apps.AppServer.User,
+		Server:   nan.Config().Apps.AppServer.Server,
+		Port:     strconv.Itoa(nan.Config().Apps.AppServer.SSHPort),
+		Password: nan.Config().Apps.AppServer.Password,
 	}
 
 	// Call Run method with command you want to run on remote server.
@@ -98,15 +98,15 @@ func CreateConnections() error {
 				Params: []GuacamoleXMLParam{
 					GuacamoleXMLParam{
 						ParamName:  "hostname",
-						ParamValue: nan.Config().AppServer.Server,
+						ParamValue: nan.Config().Apps.AppServer.Server,
 					},
 					GuacamoleXMLParam{
 						ParamName:  "port",
-						ParamValue: strconv.Itoa(nan.Config().AppServer.RDPPort),
+						ParamValue: strconv.Itoa(nan.Config().Apps.AppServer.RDPPort),
 					},
 					GuacamoleXMLParam{
 						ParamName:  "username",
-						ParamValue: fmt.Sprintf("%s@%s", user.Sam, nan.Config().AppServer.WindowsDomain),
+						ParamValue: fmt.Sprintf("%s@%s", user.Sam, nan.Config().Apps.AppServer.WindowsDomain),
 					},
 					GuacamoleXMLParam{
 						ParamName:  "password",
@@ -127,19 +127,19 @@ func CreateConnections() error {
 		Params: []GuacamoleXMLParam{
 			GuacamoleXMLParam{
 				ParamName:  "hostname",
-				ParamValue: nan.Config().AppServer.Server,
+				ParamValue: nan.Config().Apps.AppServer.Server,
 			},
 			GuacamoleXMLParam{
 				ParamName:  "port",
-				ParamValue: strconv.Itoa(nan.Config().AppServer.RDPPort),
+				ParamValue: strconv.Itoa(nan.Config().Apps.AppServer.RDPPort),
 			},
 			GuacamoleXMLParam{
 				ParamName:  "username",
-				ParamValue: fmt.Sprintf("%s@%s", nan.Config().AppServer.User, nan.Config().AppServer.WindowsDomain),
+				ParamValue: fmt.Sprintf("%s@%s", nan.Config().Apps.AppServer.User, nan.Config().Apps.AppServer.WindowsDomain),
 			},
 			GuacamoleXMLParam{
 				ParamName:  "password",
-				ParamValue: nan.Config().AppServer.Password,
+				ParamValue: nan.Config().Apps.AppServer.Password,
 			},
 		},
 	})
@@ -149,19 +149,19 @@ func CreateConnections() error {
 		Params: []GuacamoleXMLParam{
 			GuacamoleXMLParam{
 				ParamName:  "hostname",
-				ParamValue: nan.Config().AppServer.Server,
+				ParamValue: nan.Config().Apps.AppServer.Server,
 			},
 			GuacamoleXMLParam{
 				ParamName:  "port",
-				ParamValue: strconv.Itoa(nan.Config().AppServer.RDPPort),
+				ParamValue: strconv.Itoa(nan.Config().Apps.AppServer.RDPPort),
 			},
 			GuacamoleXMLParam{
 				ParamName:  "username",
-				ParamValue: fmt.Sprintf("%s@%s", nan.Config().AppServer.User, nan.Config().AppServer.WindowsDomain),
+				ParamValue: fmt.Sprintf("%s@%s", nan.Config().Apps.AppServer.User, nan.Config().Apps.AppServer.WindowsDomain),
 			},
 			GuacamoleXMLParam{
 				ParamName:  "password",
-				ParamValue: nan.Config().AppServer.Password,
+				ParamValue: nan.Config().Apps.AppServer.Password,
 			},
 			GuacamoleXMLParam{
 				ParamName:  "remote-app",
@@ -175,8 +175,8 @@ func CreateConnections() error {
 		fmt.Printf("error: %v\n", err)
 	}
 
-	if err = ioutil.WriteFile(nan.Config().AppServer.XMLConfigurationFile, output, 0777); err != nil {
-		LogError("Failed to save connections in %s params : %s", nan.Config().AppServer.XMLConfigurationFile, err)
+	if err = ioutil.WriteFile(nan.Config().Apps.AppServer.XMLConfigurationFile, output, 0777); err != nil {
+		LogError("Failed to save connections in %s params : %s", nan.Config().Apps.AppServer.XMLConfigurationFile, err)
 		return err
 	}
 
@@ -200,7 +200,7 @@ func ListApplications() []Connection {
 
 	go CreateConnections()
 
-	if bytesRead, err = ioutil.ReadFile(nan.Config().AppServer.XMLConfigurationFile); err != nil {
+	if bytesRead, err = ioutil.ReadFile(nan.Config().Apps.AppServer.XMLConfigurationFile); err != nil {
 		LogError("Failed to read connections params : %s", err)
 	}
 
@@ -254,7 +254,7 @@ func ListApplicationsForSamAccount(sam string) []Connection {
 		err              error
 	)
 
-	if bytesRead, err = ioutil.ReadFile(nan.Config().AppServer.XMLConfigurationFile); err != nil {
+	if bytesRead, err = ioutil.ReadFile(nan.Config().Apps.AppServer.XMLConfigurationFile); err != nil {
 		LogError("Failed to read connections params : %s", err)
 	}
 
@@ -287,7 +287,7 @@ func ListApplicationsForSamAccount(sam string) []Connection {
 			}
 		}
 
-		if connection.Username == fmt.Sprintf("%s@%s", sam, nan.Config().AppServer.WindowsDomain) {
+		if connection.Username == fmt.Sprintf("%s@%s", sam, nan.Config().Apps.AppServer.WindowsDomain) {
 			connections = append(connections, connection)
 		}
 	}
@@ -306,10 +306,10 @@ func UnpublishApplication(Alias string) {
 
 	// Create MakeConfig instance with remote username, server address and path to private key.
 	ssh := &easyssh.MakeConfig{
-		User:     nan.Config().AppServer.User,
-		Server:   nan.Config().AppServer.Server,
-		Port:     strconv.Itoa(nan.Config().AppServer.SSHPort),
-		Password: nan.Config().AppServer.Password,
+		User:     nan.Config().Apps.AppServer.User,
+		Server:   nan.Config().Apps.AppServer.Server,
+		Port:     strconv.Itoa(nan.Config().Apps.AppServer.SSHPort),
+		Password: nan.Config().Apps.AppServer.Password,
 	}
 
 	// TODO Parametrize this
@@ -331,10 +331,10 @@ func UnpublishApplication(Alias string) {
 func SyncUploadedFile(Filename string) {
 
 	ssh := &easyssh.MakeConfig{
-		User:     nan.Config().AppServer.User,
-		Server:   nan.Config().AppServer.Server,
-		Port:     strconv.Itoa(nan.Config().AppServer.SSHPort),
-		Password: nan.Config().AppServer.Password,
+		User:     nan.Config().Apps.AppServer.User,
+		Server:   nan.Config().Apps.AppServer.Server,
+		Port:     strconv.Itoa(nan.Config().Apps.AppServer.SSHPort),
+		Password: nan.Config().Apps.AppServer.Password,
 	}
 
 	fmt.Println("SyncUploadedFile")

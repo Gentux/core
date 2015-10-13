@@ -19,7 +19,4 @@ fi
 $_CP ${dirPath}/haptic $DEST
 $_CP ${dirPath}/plugins/ldap/ldap $DEST/plugins/ldap/ldap
 $_CP ${dirPath}/plugins/owncloud/owncloud $DEST/plugins/owncloud/owncloud
-
-# $_CP ./plugins/owncloud/owncloud $DEST/plugins/owncloud/owncloud
-
-# $_CP -r $dirPath/public $DEST
+$_CP ${dirPath}/plugins/iaas/iaas $DEST/plugins/iaas/iaas

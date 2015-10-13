@@ -41,6 +41,13 @@ type ProxyConfig_t struct {
 	WinExe string
 }
 
+type ApplicationsConfig_t struct {
+	AutoAppProvisioning bool
+	AutoAppNames        []string
+
+	AppServer AppServerConfig_t
+}
+
 type AppServerConfig_t struct {
 	User                 string
 	Server               string
