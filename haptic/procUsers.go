@@ -552,6 +552,9 @@ func (p *ProcCreateWinUser) Do() *nan.Err {
 	return p.Result
 }
 
+// Disables the user from LDAP
+// Upload removeProfile cmd script and runs it
+// Remove studio directory (used to contain user/account related artefacts)
 func (p *ProcCreateWinUser) Undo(accountParams AccountParams) *nan.Err {
 
 	p.Result = nil
@@ -569,6 +572,7 @@ func (p *ProcCreateWinUser) Undo(accountParams AccountParams) *nan.Err {
 
 	g_PluginLdap.Call("Ldap.ForceDisableAccount", params, &resp)
 	if resp == "0" {
+		//TODO : this case may not be an error case => it is valid to fail to disable a non-existing account
 		LogError("Ldap.ForceDisableAccount failed")
 	}
 	sam, e := g_Db.GetSamFromEmail(accountParams.Email)
@@ -590,12 +594,16 @@ func (p *ProcCreateWinUser) Undo(accountParams AccountParams) *nan.Err {
 
 	if nan.CopyFile(removeProfileSourcePath, removeProfileDestPath) != nil {
 		LogError("Failed to copy removeProfile for preparation")
+
 	} else if err := nan.ReplaceInFile(removeProfileDestPath, "SAMUSER", sam); err != nil {
 		LogError("Failed to edit removeProfile script")
+
 	} else if err := exec.Command("/usr/bin/unix2dos", removeProfileDestPath).Run(); err != nil {
 		LogError("Error when attempting to use unix2dos on file : %s", removeProfileDestPath)
+
 	} else if err = exec.Command("/usr/bin/scp", removeProfileDestPath, "Administrator@10.20.12.20:/cygdrive/c/Windows/SYSVOL/domain/scripts/").Run(); err != nil {
 		LogError("Error when attempting to scp file: %s on server", removeProfileDestPath)
+
 	} else {
 
 		// Execute and then delete the remove profile script

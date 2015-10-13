@@ -82,13 +82,33 @@ func main() {
 		}
 
 	case "registeruser":
-		adapter.RegisterUser(os.Args[2], os.Args[3], os.Args[4], os.Args[5])
+		if len(os.Args) != 6 {
+			fmt.Println("Command registeruser expects 4 arguments.\nUsage: haptic registeruser firstname lastname email password\n")
+		} else {
+			adapter.RegisterUser(os.Args[2], os.Args[3], os.Args[4], os.Args[5])
+		}
 	case "activateuser":
-		adapter.ActivateUser(os.Args[2])
+		if len(os.Args) != 3 {
+			fmt.Println("Command activateuser expects 1 argument.\nUsage: haptic activateuser email\n")
+		} else {
+			nan.PrintErrorJson(adapter.ActivateUser(os.Args[2]))
+			os.Exit(0)
+		}
+
 	case "deleteuser":
-		adapter.DeleteUser(os.Args[2])
-	case "changepassword":
-		//TODO
+		if len(os.Args) != 3 {
+			fmt.Println("Command deleteuser expects only one argument : the user email.\nUsage: haptic deleteuser email\n")
+		} else {
+			//adapter.DeleteUser(os.Args[2])
+
+			var params AccountParams = AccountParams{
+				Email: os.Args[2]}
+
+			DeleteUser(params)
+		}
+	case "changeuserpassword":
+		adapter.UpdateUserPassword(os.Args[2], os.Args[3])
+
 	case "serve":
 		RunServer()
 	}

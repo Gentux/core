@@ -32,6 +32,8 @@ setup:
 	mkdir -p ../bin/haptic/plugins/ldap
 	mkdir -p ../bin/haptic/plugins/owncloud
 
+	mkdir -p ../bin/haptic/external/bin
+
 	echo "Installing go packages dependencies"
 	go get github.com/dullgiulio/pingo
 	go get golang.org/x/net/icmp
@@ -43,6 +45,8 @@ setup:
 	go get github.com/gorilla/securecookie
 	go get github.com/hypersleep/easyssh
 	go get github.com/go-sql-driver/mysql
+
+        # Copy configuration files
 
 	@ if [ ! -f ../bin/haptic/plugins/iaas/config.json ]; then \
 		echo "One time creation of config file: ../bin/haptic/plugins/iaas/config.json" ; \
@@ -65,6 +69,9 @@ setup:
 		echo "One time creation of config file: ../bin/haptic/config.json" ; \
 		cp ./haptic/config.json.sample ../bin/haptic/config.json; \
 	fi
+
+	# Copy binaries
+	cp ./external/bin/winexe-static ../bin/haptic/external/bin/
 
 serve:
 	../bin/haptic/haptic serve

@@ -129,8 +129,10 @@ func (p *ServiceUsers) DeleteUser(r *http.Request, args *DeleteUserParam, reply 
 		return errors.New("You need admin permission to perform this action")
 	}
 
-	err := adapter.DeleteUser(args.Email)
-	if err != nil {
+	var params AccountParams = AccountParams{
+		Email: args.Email}
+
+	if err := DeleteUser(params); err != nil {
 		reply.Result = false
 	} else {
 		reply.Result = true

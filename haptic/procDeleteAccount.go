@@ -27,10 +27,10 @@ func DeleteUser(accountParams AccountParams) *nan.Err {
 
 	if bActive, err = g_Db.IsUserActivated(accountParams.Email); err != nil {
 		return LogErrorCode(ErrIssueWithAccountsDb)
-	} else {
-		// TODO insert here freeing of application specific resources
-		//G_ProcCreateWinUser.Undo(accountParams)
 	}
+
+	// TODO insert here freeing of application specific resources
+	G_ProcCreateWinUser.Undo(accountParams)
 
 	// TODO : do not exit too early here and allow for situations where an account may have been improperly created,
 	// thus not visible in db anymore, but still with remaining files inside studio directory, that need to be all deleted
