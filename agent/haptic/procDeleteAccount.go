@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	nan "nanocloud.com/zeroinstall/lib/libnan"
 )
 
@@ -20,9 +21,6 @@ func DeleteUser(p AccountParams) *nan.Error {
 
 	G_Account = p
 
-	// InitialiseDb()
-	// defer ShutdownDb()
-
 	Log("Starting procedure DeleteUser")
 
 	ValidateDeleteUserParams()
@@ -33,7 +31,18 @@ func DeleteUser(p AccountParams) *nan.Error {
 	if bActive, err = g_Db.IsUserActivated(G_Account.Email); err != nil {
 		return LogErrorCode(ErrIssueWithAccountsDb)
 	} else {
-		// TODO insert here freeing of application specific resources
+
+		// freeing of application specific resources
+
+		// Remove owncloud user account
+		// ============================
+
+		resp := ""
+		params := fmt.Sprintf(`{ "username" : "%s" }`, G_Account.Email)
+		if err := g_PluginOwncloud.Call("Owncloud.DeleteUser", params, &resp); err != nil {
+			LogError("Plugin method Owncloud.DeleteUser failed with error: ", err.Error())
+		}
+
 		G_ProcCreateWinUser.Undo()
 	}
 

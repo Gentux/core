@@ -11,21 +11,24 @@ import (
 )
 
 var (
-	protocol, hostname, adminLogin, password string
+	Protocol, Url, Login, Password string
 
 	g_apiUrl string
 )
 
-func Configure(_protocol, _hostname, _adminLogin, _password string) {
-	protocol = _protocol
-	hostname = _hostname
-	adminLogin = _adminLogin
-	password = _password
+func OwncloudConfigure(configParams ConfigureParams) error {
 
-	g_apiUrl = fmt.Sprintf("%s://%s:%s@%s/ocs/v1.php/cloud/users", protocol, adminLogin, password, hostname)
+	Protocol = configParams.Protocol
+	Url = configParams.Url
+	Login = configParams.Login
+	Password = configParams.Password
+
+	g_apiUrl = fmt.Sprintf("%s://%s:%s@%s/ocs/v1.php/cloud/users", Protocol, Login, Password, Url)
+
+	return nil
 }
 
-func CreateUser(_username, _password string) error {
+func OwncloudAddUser(_username, _password string) error {
 
 	values := make(url.Values)
 	values.Set("userid", _username)
@@ -48,22 +51,19 @@ func CreateUser(_username, _password string) error {
 	return nil
 }
 
-func DeleteUser(_userId string) error {
+func OwncloudDeleteUser(_username string) error {
 
-	deleteUrl := g_apiUrl + "/" + _userId
+	url := g_apiUrl + "/" + _username
 
-	if req, err := http.NewRequest("DELETE", deleteUrl, nil); err != nil {
-		log.Printf("error creating delete request: %s", err)
-		return err
-	} else if resp, err := http.DefaultClient.Do(req); err != nil {
-		log.Printf("error sending request to owncloud: %s", err)
-		return err
-	} else if body, err := ioutil.ReadAll(resp.Body); err != nil {
-		log.Printf("error parsing response from owncloud: %s", err)
-		return err
-	} else {
+	req, err := http.NewRequest("DELETE", url, nil)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Printf("Owncloud plugin error %s when invoking url: %s\n", err.Error(), url)
+	}
+
+	if resp != nil {
 		resp.Body.Close()
-		log.Printf("owncloud request result body: %s", body)
 	}
 
 	return nil
@@ -76,10 +76,6 @@ func UpdateUserEmail() {
 func UpdateUserPassword() {
 
 }
-
-// func ListUsers() {
-
-// }
 
 // func main() {
 

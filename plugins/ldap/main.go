@@ -96,13 +96,13 @@ func (p *Ldap) AddUser(jsonParams string, _outMsg *string) error {
 		return nil
 	}
 
-	cmd := exec.Command("/usr/bin/php", "add_LDAP_user.php", params.UserEmail, params.Password)
+	cmd := exec.Command("/usr/bin/php", g_LDAPConfig.ScriptsDir+"/add_LDAP_user.php", params.UserEmail, params.Password)
 	cmd.Dir = g_LDAPConfig.ScriptsDir
 
 	out, err := cmd.Output()
 	if err != nil {
-		fmt.Printf("Failed to run script add_LDAP_user.php for email <%s> and password <%s>, error: %s, output: %s\n",
-			params.UserEmail, params.Password, err, string(out))
+		fmt.Printf("Failed to run script add_LDAP_user.php for email <%s> and password <%s>, error: %s, output: %s in directory: %s\n",
+			params.UserEmail, params.Password, err, string(out), g_LDAPConfig.ScriptsDir)
 	} else {
 		*_outMsg = string(out)
 

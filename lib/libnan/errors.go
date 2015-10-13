@@ -118,6 +118,8 @@ var (
 	ErrPasswordNonCompliant = NewExitCode(3, "The password does not respect the security policy")
 	ErrFilesystemError      = NewExitCode(16, "Filesystem error : failed to create/delete file/directory")
 	ErrSystemError          = NewExitCode(17, "System error")
+	ErrConfigError          = NewExitCode(18, "Error in configuration file")
+	ErrPluginError          = NewExitCode(19, "Plugin communication error")
 	ErrConsulNotFound       = NewExitCode(100, "Could not access Consul executable")
 	ErrCouldNotPingVm       = NewExitCode(101, "Could not ping VM")
 	ErrJsonParsingError     = NewExitCode(103, "Error when parsing JSON, see TAC log")

@@ -20,6 +20,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	nan "nanocloud.com/zeroinstall/lib/libnan"
@@ -73,6 +74,17 @@ func main() {
 		os.Exit(0)
 	case "deleteuser":
 		adapter.DeleteUser(os.Args[2])
+
+	case "addownclouduser":
+		resp := ""
+		params := fmt.Sprintf(`{ "username" : "%s", "password" : "%s" }`, os.Args[2], os.Args[3])
+		g_PluginOwncloud.Call("Owncloud.AddUser", params, &resp)
+
+	case "delownclouduser":
+		resp := ""
+		params := fmt.Sprintf(`{ "username" : "%s" }`, os.Args[2])
+		g_PluginOwncloud.Call("Owncloud.DeleteUser", params, &resp)
+
 	case "changepassword":
 		//TODO
 	case "serve":
@@ -81,7 +93,13 @@ func main() {
 }
 
 func SetupPlugins() {
+
+	var resp string
+
 	Log("Num plugins referenced in config : %d", len(nan.Config().Plugins))
+
+	// Instanciate plugins
+	// ===================
 
 	// LDAP
 	g_PluginLdap = pingo.NewPlugin("tcp", nan.Config().CommonBaseDir+"/plugins/ldap/ldap")
@@ -95,22 +113,42 @@ func SetupPlugins() {
 		nan.LogError("Failed to start plugin Owncloud")
 	}
 
+	// Start and configure plugins
+	// ===========================
+
 	Log("Start plugin Ldap")
 	g_PluginLdap.Start()
-	var (
-		resp                 string
-		pluginLdapJsonParams []byte
-	)
-	pluginLdapJsonParams, _ = json.Marshal(nan.Config().Plugins["Ldap"])
-	err := g_PluginLdap.Call("Ldap.Configure", string(pluginLdapJsonParams), &resp)
+
+	pluginLdapJsonParams, err := json.Marshal(nan.Config().Plugins["Ldap"])
+	if err != nil {
+		LogError("Failed to unmarshall LDAP plugin params")
+		ExitError(nan.ErrConfigError)
+	}
+
+	err = g_PluginLdap.Call("Ldap.Configure", string(pluginLdapJsonParams), &resp)
 	if err != nil {
 		// TODO Clarify error and string output
 		Log("Error while configuring plugin Ldap : %s", err)
+		ExitError(nan.ErrPluginError)
 	}
 	Log("Start plugin Ldap : DONE")
 
 	Log("Start plugin Owncloud")
 	g_PluginOwncloud.Start()
+
+	pluginOwncloudJsonParams, err := json.Marshal(nan.Config().Plugins["Owncloud"])
+	if err != nil {
+		LogError("Failed to unmarshall Owncloud plugin params")
+		ExitError(nan.ErrConfigError)
+	}
+
+	err = g_PluginOwncloud.Call("Owncloud.Configure", string(pluginOwncloudJsonParams), &resp)
+	if err != nil {
+		// TODO Clarify error and string output
+		LogError("Error while configuring plugin Owncloud : %s", err)
+		ExitError(nan.ErrPluginError)
+	}
+
 	Log("Start plugin Owncloud : DONE")
 }
 

@@ -4,7 +4,7 @@
 
 owncloud: ./bin/haptic/plugins/owncloud/owncloud
 
-./bin/haptic/plugins/owncloud/owncloud: ./plugins/owncloud/main.go
+./bin/haptic/plugins/owncloud/owncloud: ./plugins/owncloud/main.go ./plugins/owncloud/owncloud.go
 	go build -o ./bin/haptic/plugins/owncloud/owncloud nanocloud.com/zeroinstall/plugins/owncloud
 
 ldap: ./bin/haptic/plugins/ldap/ldap

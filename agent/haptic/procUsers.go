@@ -200,10 +200,6 @@ func ActivateUser(p AccountParams) *nan.Error {
 
 	G_Account = p
 
-	//[OPT] was previously needed for single executalbles
-	//InitialiseDb()
-	//defer ShutdownDb()
-
 	if !nan.ValidEmail(G_Account.Email) {
 		return LogErrorCode(nan.ErrPbWithEmailFormat)
 	}
@@ -247,12 +243,8 @@ func ActivateUser(p AccountParams) *nan.Error {
 			G_Account.Email, tmpEmail)
 	}
 
-	//defer UndoIfFailed(G_ProcCreateTac)
-	//[OPT] Create account resource such as TAC VM
-	// G_ProcCreateTac.Do()
-
 	//defer UndoIfFailed(G_ProcCreateWinUser)
-	G_ProcCreateWinUser.Fqdn = "n/a" //[OPT] = G_ProcCreateTac.Ans.TacUrl
+	G_ProcCreateWinUser.Fqdn = "n/a"
 	G_ProcCreateWinUser.Do()
 
 	if G_ProcCreateWinUser.out.sam == "" {
@@ -260,6 +252,15 @@ func ActivateUser(p AccountParams) *nan.Error {
 	}
 
 	g_Db.UpdateConnectionUserNameForEmail(G_Account.Email, G_ProcCreateWinUser.out.sam)
+
+	// Add owncloud user
+	// =================
+
+	resp := ""
+	params := fmt.Sprintf(`{ "username" : "%s", "password" : "%s" }`, G_Account.Email, G_Account.Password)
+	if err := g_PluginOwncloud.Call("Owncloud.AddUser", params, &resp); err != nil {
+		LogError("Plugin method Owncloud.AddUser failed with error: ", err.Error())
+	}
 
 	return OkAccountBeingActivated
 }
