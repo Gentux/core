@@ -3,18 +3,10 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 
 	"github.com/hypersleep/easyssh"
 )
-
-// TODO
-// ssh Administrator@10.20.30.40 -p 1119 "powershell.exe Get-RDRemoteApp"
-// ssh Administrator@10.20.30.40 -p 1119 "powershell.exe -Command \"Get-RDRemoteApp | ConvertTo-Json\"" > /tmp/windowsShit.json
-// https://technet.microsoft.com/fr-fr/library/jj215454.aspx
-
-// ========================================================================================================================
-// TYPES
-// =====
 
 type ApplicationParams struct {
 	CollectionName string
@@ -49,6 +41,8 @@ func ListApplications() string {
 	response, err := ssh.Run("powershell.exe -Command \"Get-RDRemoteApp | ConvertTo-Json -Compress\"")
 	if err != nil {
 		panic("Can't run remote command: " + err.Error())
+	} else if response == "" {
+		response = "[]"
 	}
 
 	if []byte(response)[0] != []byte("[")[0] {
@@ -70,7 +64,6 @@ func ListApplications() string {
 // - Unpublish specified applications from ActiveDirectory
 // ========================================================================================================================
 func UnpublishApplication(Alias string) {
-	fmt.Println(Alias)
 	var powershellCmd string
 
 	// Create MakeConfig instance with remote username, server address and path to private key.
@@ -83,7 +76,6 @@ func UnpublishApplication(Alias string) {
 
 	// TODO Parametrize this
 	powershellCmd = fmt.Sprintf("powershell.exe -Command \"Remove-RDRemoteApp -Alias %s -CollectionName %s -Force\"", Alias, "winadapps")
-	fmt.Println(powershellCmd)
 
 	// Call Run method with command you want to run on remote server.
 	_, err := ssh.Run(powershellCmd)
