@@ -128,8 +128,10 @@ func InitPlugin(pluginName string, ppPlugin **pingo.Plugin) {
 	if pluginJsonParams, ok = nan.Config().Plugins[pluginNameLowercase]; !ok {
 
 		if pluginJsonParams, ok = nan.Config().Plugins[pluginRpcName]; !ok {
-			LogError("Plugin %s doesn't have a parameters section in config.json !", pluginName)
-			return
+
+			err := nan.Errorf("Plugin %s doesn't have a parameters section in config.json !", pluginName)
+
+			nan.ExitError(err)
 		}
 	}
 
@@ -165,6 +167,7 @@ func InitPlugin(pluginName string, ppPlugin **pingo.Plugin) {
 
 func SetupPlugins() {
 	Log("Num plugins referenced in config : %d", len(nan.Config().Plugins))
+
 	InitPlugin("Iaas", &g_PluginIaas)
 	InitPlugin("Ldap", &g_PluginLdap)
 	InitPlugin("Owncloud", &g_PluginOwncloud)

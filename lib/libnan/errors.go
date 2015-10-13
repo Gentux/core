@@ -120,9 +120,15 @@ func ExitOk(_pExitCode *Err) {
 
 func ExitError(_pExitCode *Err) {
 	LogError(_pExitCode.Message)
-	fmt.Println(_pExitCode.ToJson())
+	fmt.Println(_pExitCode.Message)
 
-	os.Exit(-1)
+	os.Exit(_pExitCode.Code)
+}
+
+func Errorf(_msg string, _args ...interface{}) *Err {
+	msg := fmt.Sprintf(_msg, _args...)
+
+	return &Err{Code: -1, Message: msg}
 }
 
 func ExitErrorf(_code int, _msg string, _args ...interface{}) {
@@ -155,6 +161,7 @@ var (
 	ErrOpFailed             = NewExitCode(4, "Operation failed: resource is not in the state required to perform the operation")
 	ErrPbWithEmailFormat    = NewExitCode(2, "Problem with email format")
 	ErrPasswordNonCompliant = NewExitCode(3, "The password does not respect the security policy")
+	ErrPasswordNotUpdated   = NewExitCode(5, "Update password failed")
 	ErrFilesystemError      = NewExitCode(16, "Filesystem error : failed to create/delete file/directory")
 	ErrSystemError          = NewExitCode(17, "System error")
 	ErrConsulNotFound       = NewExitCode(100, "Could not access Consul executable")
