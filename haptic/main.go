@@ -25,13 +25,9 @@ package main
 import (
 	"fmt"
 
-	"encoding/json"
 	"os"
-	"strings"
 
 	nan "nanocloud.com/core/lib/libnan"
-
-	"github.com/dullgiulio/pingo" // for plugins
 )
 
 var (
@@ -46,10 +42,7 @@ var (
 
 	g_Db Db
 
-	g_PluginHistory  *pingo.Plugin
-	g_PluginLdap     *pingo.Plugin
-	g_PluginIaas     *pingo.Plugin
-	g_PluginOwncloud *pingo.Plugin
+	g_PluginsMap PluginsMaps_t
 
 	// Aliases useful for this package so that we don't have to have to prefix them with nan all the time
 	ExitOk       = nan.ExitOk
@@ -87,79 +80,34 @@ func main() {
 		}
 
 	case "registeruser":
-		adapter.RegisterUser(os.Args[2], os.Args[3], os.Args[4], os.Args[5])
+		if len(os.Args) != 6 {
+			fmt.Println("Command registeruser expects 4 arguments.\nUsage: haptic registeruser firstname lastname email password\n")
+		} else {
+			adapter.RegisterUser(os.Args[2], os.Args[3], os.Args[4], os.Args[5])
+		}
 	case "activateuser":
-		nan.PrintErrorJson(adapter.ActivateUser(os.Args[2]))
-		os.Exit(0)
+		if len(os.Args) != 3 {
+			fmt.Println("Command activateuser expects 1 argument.\nUsage: haptic activateuser email\n")
+		} else {
+			nan.PrintErrorJson(adapter.ActivateUser(os.Args[2]))
+			os.Exit(0)
+		}
+
 	case "deleteuser":
-		adapter.DeleteUser(os.Args[2])
+		if len(os.Args) != 3 {
+			fmt.Println("Command deleteuser expects only one argument : the user email.\nUsage: haptic deleteuser email\n")
+		} else {
+			//adapter.DeleteUser(os.Args[2])
+
+			var params AccountParams = AccountParams{
+				Email: os.Args[2]}
+
+			DeleteUser(params)
+		}
 	case "changeuserpassword":
 		adapter.UpdateUserPassword(os.Args[2], os.Args[3])
 
 	case "serve":
 		RunServer()
-	}
-}
-
-func InitPlugin(pluginName string, ppPlugin **pingo.Plugin) {
-	var ok bool
-	var pluginJsonParams nan.PluginParams
-
-	pluginNameLowercase := strings.ToLower(pluginName)
-	pluginRpcName := strings.ToUpper(pluginName[0:1]) + pluginName[1:len(pluginName)]
-
-	if pluginJsonParams, ok = nan.Config().Plugins[pluginNameLowercase]; !ok {
-
-		if pluginJsonParams, ok = nan.Config().Plugins[pluginRpcName]; !ok {
-			LogError("Plugin %s doesn't have a parameters section in config.json !", pluginName)
-			return
-		}
-	}
-
-	pluginPath := fmt.Sprintf("%s/plugins/%s/%s", nan.Config().CommonBaseDir,
-		pluginNameLowercase, pluginNameLowercase)
-
-	*ppPlugin = pingo.NewPlugin("tcp", pluginPath)
-	if *ppPlugin == nil {
-		nan.ExitErrorf(0, "Failed to create plugin %s", pluginRpcName)
-	}
-
-	Log("Starting plugin %s", pluginRpcName)
-	(*ppPlugin).Start()
-
-	pluginParams, e := json.Marshal(pluginJsonParams)
-
-	if e != nil {
-		LogError("Failed to unmarshall %s plugin params", pluginName)
-		ExitError(nan.ErrConfigError)
-	}
-
-	resp := ""
-
-	if e := (*ppPlugin).Call(pluginRpcName+".Configure", string(pluginParams), &resp); e != nil {
-		// TODO Clarify error and string output
-		Log("Error while configuring plugin %s : %s", pluginRpcName, e)
-		// TODO activate this line when all plugins have a Configure method
-		// ExitError(nan.ErrPluginError)
-	}
-
-	Log("Start plugin %s : DONE", pluginRpcName)
-}
-
-func SetupPlugins() {
-	Log("Num plugins referenced in config : %d", len(nan.Config().Plugins))
-	InitPlugin("History", &g_PluginHistory)
-	InitPlugin("Iaas", &g_PluginIaas)
-	InitPlugin("Ldap", &g_PluginLdap)
-	InitPlugin("Owncloud", &g_PluginOwncloud)
-}
-
-func StopPlugins() {
-	if g_PluginOwncloud != nil {
-		g_PluginOwncloud.Stop()
-	}
-
-	if g_PluginLdap != nil {
-		g_PluginLdap.Stop()
 	}
 }

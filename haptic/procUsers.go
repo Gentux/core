@@ -142,13 +142,20 @@ func RegisterUser(accountParam AccountParams) *nan.Err {
 	user.CreationTime = t.Format(time.RFC3339)
 
 	params := fmt.Sprintf(`{ "UserEmail" : "%s" }`, user.Email)
-	g_PluginLdap.Call("Ldap.ForceDisableAccount", params, &resp)
+
+	var pPluginLdap *Plugin
+	pPluginLdap, err = GetPlugin("ldap")
+	if err == nil {
+		return err
+	}
+
+	pPluginLdap.Call("Ldap.ForceDisableAccount", params, &resp)
 	if resp == "0" {
 		LogError("Ldap.ForceDisableAccount failed")
 	}
 	Log("Configure Windows user profile")
 	params = fmt.Sprintf(`{ "UserEmail" : "%s", "password" : "%s" }`, user.Email, user.Password)
-	g_PluginLdap.Call("Ldap.AddUser", params, &user.Sam)
+	pPluginLdap.Call("Ldap.AddUser", params, &user.Sam)
 
 	userJson, e := json.Marshal(user)
 	if e != nil {
@@ -390,7 +397,7 @@ func TestWinExe(sam string) {
 
 func (p *ProcCreateWinUser) Do() *nan.Err {
 
-	var err error
+	var err *nan.Err
 
 	if nan.DryRun || nan.ModeRef {
 		Log("Creating Windows user + LDAP declaration")
@@ -421,7 +428,13 @@ func (p *ProcCreateWinUser) Do() *nan.Err {
 
 	params := fmt.Sprintf(`{ "UserEmail" : "%s" }`, G_Account.Email)
 
-	g_PluginLdap.Call("Ldap.ForceDisableAccount", params, &resp)
+	var pPluginLdap *Plugin
+	pPluginLdap, err = GetPlugin("ldap")
+	if err == nil {
+		return err
+	}
+
+	pPluginLdap.Call("Ldap.ForceDisableAccount", params, &resp)
 
 	if resp == "0" {
 		LogError("Ldap.ForceDisableAccount failed")
@@ -437,7 +450,8 @@ func (p *ProcCreateWinUser) Do() *nan.Err {
 	params = fmt.Sprintf(`{ "UserEmail" : "%s", "password" : "%s" }`, G_Account.Email, G_Account.Password)
 
 	for idx := 0; idx < 3; idx++ {
-		g_PluginLdap.Call("Ldap.AddUser", params, &resp)
+
+		pPluginLdap.Call("Ldap.AddUser", params, &resp)
 
 		if resp[0] != '$' {
 			LogError("Failed to add LDAP user, got output: <%s>. Retrying for user <%s> and password <%s>", resp, G_Account.Email, G_Account.Password)
@@ -511,7 +525,7 @@ func (p *ProcCreateWinUser) Do() *nan.Err {
 
 	// TODO add timeout + retry on this call + message: did not respond in a timely manner
 
-	if err = exec.Command("/usr/bin/scp", samFilePath, "Administrator@10.20.12.20:/cygdrive/c/Windows/SYSVOL/domain/scripts/").Run(); err != nil {
+	if e := exec.Command("/usr/bin/scp", samFilePath, "Administrator@10.20.12.20:/cygdrive/c/Windows/SYSVOL/domain/scripts/").Run(); e != nil {
 		return LogError("when attempting to scp file: %s on server", samFilePath)
 	}
 
@@ -529,14 +543,14 @@ func (p *ProcCreateWinUser) Do() *nan.Err {
 		LogError(nan.ErrFilesystemError.Message)
 	}
 
-	if err = exec.Command("/usr/bin/unix2dos", sUserSecurityScriptPath).Run(); err != nil {
+	if e := exec.Command("/usr/bin/unix2dos", sUserSecurityScriptPath).Run(); e != nil {
 		Log("Error when attempting to use unix2dos on file : %s", sUserSecurityScriptPath)
 	}
 
 	// TODO add timeout + retry on this call + message: did not respond in a timely manner
 
-	if err = exec.Command("/usr/bin/scp", sUserSecurityScriptPath,
-		"Administrator@10.20.12.20:/cygdrive/c/Windows/SYSVOL/domain/scripts/").Run(); err != nil {
+	if e := exec.Command("/usr/bin/scp", sUserSecurityScriptPath,
+		"Administrator@10.20.12.20:/cygdrive/c/Windows/SYSVOL/domain/scripts/").Run(); e != nil {
 		return LogError("when attempting to scp file: %s on server", sUserSecurityScriptPath)
 	}
 
@@ -592,7 +606,13 @@ func (p *ProcCreateWinUser) Undo(accountParams AccountParams) *nan.Err {
 	params := fmt.Sprintf(`{ "UserEmail" : "%s" }`, accountParams.Email)
 	resp := ""
 
-	g_PluginLdap.Call("Ldap.ForceDisableAccount", params, &resp)
+	var pPluginLdap *Plugin
+	pPluginLdap, err = GetPlugin("ldap")
+	if err == nil {
+		return err
+	}
+
+	pPluginLdap.Call("Ldap.ForceDisableAccount", params, &resp)
 	if resp == "0" {
 		//TODO : this case may not be an error case => it is valid to fail to disable a non-existing account
 		LogError("Ldap.ForceDisableAccount failed")

@@ -23,7 +23,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 
 	nan "nanocloud.com/core/lib/libnan"
 )
@@ -54,28 +54,11 @@ func (o adapter_t) ActivateUser(_Email string) *nan.Err {
 	return ActivateUser(params)
 }
 
-func (o adapter_t) UpdateUserEmail(_PrevEmail, _NewEmail string) error {
-
-	fmt.Println("TODO UpdateUserEmail")
-
-	return nil
-}
-
 func (o adapter_t) UpdateUserPassword(_Email, _Password string) *nan.Err {
 
 	if UpdateUserPassword(_Email, _Password) != true {
 		return nan.ErrPasswordNotUpdated
 	}
-
-	return nil
-}
-
-func (o adapter_t) DeleteUser(_Email string) error {
-
-	var params AccountParams = AccountParams{
-		Email: _Email}
-
-	DeleteUser(params)
 
 	return nil
 }
@@ -102,17 +85,19 @@ func (o adapter_t) GetVmList() (string, error) {
 }
 
 func (o adapter_t) DownloadWindowsVm() (bool, error) {
-	return DownloadWindowsVm(), nil
+	result, err := DownloadWindowsVm()
+
+	return result, errors.New(err.Message)
 }
 
 func (o adapter_t) DownloadStatus() (bool, error) {
-	return DownloadStatus(), nil
+	result, err := DownloadStatus()
+
+	return result, errors.New(err.Message)
 }
 
 func (o adapter_t) StartVm(vmName string) (bool, error) {
-	return StartVm(vmName), nil
-}
+	result, err := StartVm(vmName)
 
-func (o adapter_t) StopVm(vmName string) (bool, error) {
-	return StopVm(vmName), nil
+	return result, errors.New(err.Message)
 }

@@ -24,6 +24,8 @@ package main
 
 import (
 	"fmt"
+
+	nan "nanocloud.com/core/lib/libnan"
 )
 
 type VmListParams struct {
@@ -42,9 +44,14 @@ func ListVMs() string {
 		res string
 	)
 
-	err := g_PluginIaas.Call("Iaas.ListRunningVm", vms, &res)
+	pPluginIaas, err := GetPlugin("iaas")
 	if err != nil {
-		fmt.Println("Error calling Iaas Plugin")
+		return ""
+	}
+
+	e := pPluginIaas.Call("Iaas.ListRunningVm", vms, &res)
+	if e != nil {
+		LogError("when calling Iaas.ListRunningVm")
 	}
 
 	return res
@@ -56,7 +63,7 @@ func ListVMs() string {
 // Does:
 // - Launch windows download from hypervisor by calling Iaas API
 // ========================================================================================================================
-func DownloadWindowsVm() bool {
+func DownloadWindowsVm() (bool, *nan.Err) {
 
 	var (
 		// TODO: We mustn't have value hardcoded like that
@@ -64,15 +71,20 @@ func DownloadWindowsVm() bool {
 		res    string
 	)
 
-	err := g_PluginIaas.Call("Iaas.DownloadVm", vmName, &res)
+	pPluginIaas, err := GetPlugin("iaas")
 	if err != nil {
+		return false, err
+	}
+
+	if e := pPluginIaas.Call("Iaas.DownloadVm", vmName, &res); e != nil {
 		fmt.Println("Error calling Iaas Plugin")
+		return false, nan.ErrFrom(e)
 	}
 
 	if res == "true" {
-		return true
+		return true, nil
 	} else {
-		return false
+		return false, nil
 	}
 }
 
@@ -82,19 +94,24 @@ func DownloadWindowsVm() bool {
 // Does:
 // - Return true if a download is in progress
 // ========================================================================================================================
-func DownloadStatus() bool {
+func DownloadStatus() (bool, *nan.Err) {
 
 	var res string
 
-	err := g_PluginIaas.Call("Iaas.DownloadStatus", "", &res)
+	pPluginIaas, err := GetPlugin("iaas")
 	if err != nil {
+		return false, err
+	}
+
+	if e := pPluginIaas.Call("Iaas.DownloadStatus", "", &res); e != nil {
 		fmt.Println("Error calling Iaas Plugin")
+		return false, nan.ErrFrom(e)
 	}
 
 	if res == "true" {
-		return true
+		return true, nil
 	} else {
-		return false
+		return false, nil
 	}
 }
 
@@ -104,21 +121,25 @@ func DownloadStatus() bool {
 // Does:
 // - Start a virtual machine matching vmName
 // ========================================================================================================================
-func StartVm(vmName string) bool {
+func StartVm(vmName string) (bool, *nan.Err) {
 
-	var (
-		res string
-	)
+	var res string
 
-	err := g_PluginIaas.Call("Iaas.StartVm", vmName, &res)
+	pPluginIaas, err := GetPlugin("iaas")
 	if err != nil {
-		fmt.Printf("Error calling Iaas Plugin: %v", err)
+		return false, err
+	}
+
+	e := pPluginIaas.Call("Iaas.StartVm", vmName, &res)
+	if e != nil {
+		fmt.Printf("Error calling Iaas Plugin: %v", e)
+		return false, nan.ErrFrom(e)
 	}
 
 	if res == "true" {
-		return true
+		return true, nil
 	} else {
-		return false
+		return false, nil
 	}
 }
 
