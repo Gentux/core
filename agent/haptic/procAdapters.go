@@ -3,15 +3,12 @@ package main
 import (
 	"fmt"
 
-	"database/sql"
-	_ "github.com/go-sql-driver/mysql"
-
-	nan "nanocloud.com/zeroinstall/lib/libnan"
+	"github.com/boltdb/bolt"
 )
 
 // We wrap sql.DB in a user struct to which we can add our own methods
 type Db struct {
-	*sql.DB
+	*bolt.DB
 }
 
 type adapter_t struct{}
@@ -34,16 +31,19 @@ func (o adapter_t) RegisterUser(_Firstname, _Lastname, _Email, _Password string)
 	return nil
 }
 
-func (o adapter_t) ActivateUser(_Email string) *nan.Error {
+func (o adapter_t) ActivateUser(_Email string) error {
 
 	var params AccountParams = AccountParams{
 		Email: _Email}
 
-	return ActivateUser(params)
+	ActivateUser(params)
+
+	return nil
 }
 
-func (o adapter_t) GetUsers() ([]string, *nan.Error) {
-	return ListUserEmails()
+func (o adapter_t) GetUsers() ([]User, error) {
+
+	return ListUsers(), nil
 }
 
 func (o adapter_t) UpdateUserEmail(_PrevEmail, _NewEmail string) error {
@@ -53,9 +53,11 @@ func (o adapter_t) UpdateUserEmail(_PrevEmail, _NewEmail string) error {
 	return nil
 }
 
-func (o adapter_t) UpdateUserPassword(_Email, _Password string) *nan.Error {
+func (o adapter_t) UpdateUserPassword(_Email, _Password string) error {
 
-	return UpdateUserPassword(_Email, _Password)
+	UpdateUserPassword(_Email, _Password)
+
+	return nil
 }
 
 func (o adapter_t) DeleteUser(_Email string) error {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	nan "nanocloud.com/zeroinstall/lib/libnan"
 )
 
@@ -17,40 +16,27 @@ var ()
 // - [OPTIONAL] : free application specific resources + storage
 // - DeleteUser (LDAP, AD)
 // ========================================================================================================================
-func DeleteUser(p AccountParams) *nan.Error {
-
-	G_Account = p
+func DeleteUser(accountParams AccountParams) {
 
 	Log("Starting procedure DeleteUser")
 
-	ValidateDeleteUserParams()
+	ValidateDeleteUserParams(accountParams)
 
 	var bRegistered, bActive bool
 	var err error
 
-	if bActive, err = g_Db.IsUserActivated(G_Account.Email); err != nil {
-		return LogErrorCode(ErrIssueWithAccountsDb)
+	if bActive, err = g_Db.IsUserActivated(accountParams.Email); err != nil {
+		ExitError(ErrIssueWithAccountsDb)
 	} else {
-
-		// freeing of application specific resources
-
-		// Remove owncloud user account
-		// ============================
-
-		resp := ""
-		params := fmt.Sprintf(`{ "username" : "%s" }`, G_Account.Email)
-		if err := g_PluginOwncloud.Call("Owncloud.DeleteUser", params, &resp); err != nil {
-			LogError("Plugin method Owncloud.DeleteUser failed with error: ", err.Error())
-		}
-
-		G_ProcCreateWinUser.Undo()
+		// TODO insert here freeing of application specific resources
+		//G_ProcCreateWinUser.Undo(accountParams)
 	}
 
 	// TODO : do not exit too early here and allow for situations where an account may have been improperly created,
 	// thus not visible in db anymore, but still with remaining files inside studio directory, that need to be all deleted
 
-	if bRegistered, err = g_Db.IsUserRegistered(G_Account.Email); err != nil {
-		return LogErrorCode(ErrIssueWithAccountsDb)
+	if bRegistered, err = g_Db.IsUserRegistered(accountParams.Email); err != nil {
+		ExitError(ErrIssueWithAccountsDb)
 	} else {
 		G_ProcRegisterProxyUser.Undo()
 	}
@@ -58,10 +44,13 @@ func DeleteUser(p AccountParams) *nan.Error {
 	if bActive && !bRegistered {
 		LogError("Corrupt account cleaned up : was ACTIVE but didn't look NOT REGISTERED")
 	} else if !bRegistered && !bActive {
-		return LogErrorCode(ErrAccountDoesNotExist)
+		ExitError(ErrAccountDoesNotExist)
 	}
 
-	return OkAccountBeingDeleted
+	user, err := g_Db.GetUser(accountParams.Email)
+
+	g_Db.DeleteUser(user)
+	nan.PrintOk(OkAccountBeingDeleted)
 }
 
 // ========================================================================================================================
@@ -69,11 +58,11 @@ func DeleteUser(p AccountParams) *nan.Error {
 // ========================================================================================================================
 
 // Procedure [NOSIDEEFFECT] Check preconditions for valid/compliant account creation parameters
-func ValidateDeleteUserParams() {
+func ValidateDeleteUserParams(accountParams AccountParams) {
 
-	nan.Debug("Verifying parameters to delete %s account", G_Account.Email)
+	nan.Debug("Verifying parameters to delete %s account", accountParams.Email)
 
-	if !nan.ValidEmail(G_Account.Email) {
-		LogErrorCode(nan.ErrPbWithEmailFormat)
+	if !nan.ValidEmail(accountParams.Email) {
+		ExitError(nan.ErrPbWithEmailFormat)
 	}
 }

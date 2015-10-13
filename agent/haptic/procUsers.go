@@ -1,18 +1,18 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 
 	nan "nanocloud.com/zeroinstall/lib/libnan"
 
-	_ "github.com/go-sql-driver/mysql"
-
-	"io/ioutil"
-
-	"os"
-	"os/exec"
-	"strings"
+	"github.com/boltdb/bolt"
 )
 
 // ========================================================================================================================
@@ -28,28 +28,28 @@ type AccountParams struct {
 // ========================================================================================================================
 
 // Procedure [NOSIDEEFFECT] Check preconditions for valid/compliant account creation parameters
-func ValidateCreateUserParams() *nan.Error {
+func ValidateCreateUserParams(accountParam AccountParams) {
 
-	Log("Verifying parameters to create %s account", G_Account.Email)
+	Log("Verifying parameters to create %s account", accountParam.Email)
 
-	if !nan.ValidName(G_Account.FirstName) {
-		return LogErrorCode(ErrFirstnameNonCompliant)
+	if !nan.ValidName(accountParam.FirstName) {
+		ExitError(ErrFirstnameNonCompliant)
 	}
 
-	if !nan.ValidName(G_Account.LastName) {
-		return LogErrorCode(ErrLastnameNonCompliant)
+	if !nan.ValidName(accountParam.LastName) {
+		ExitError(ErrLastnameNonCompliant)
 	}
 
-	if !nan.ValidEmail(G_Account.Email) {
-		return LogErrorCode(nan.ErrPbWithEmailFormat)
+	if !nan.ValidEmail(accountParam.Email) {
+		ExitError(nan.ErrPbWithEmailFormat)
 	}
 
-	if !nan.ValidPassword(G_Account.Password) {
-		return LogErrorCode(nan.ErrPasswordNonCompliant)
+	if !nan.ValidPassword(accountParam.Password) {
+		ExitError(nan.ErrPasswordNonCompliant)
 	}
 
 	if nan.DryRun || nan.ModeRef {
-		return nil
+		return
 	}
 
 	//TODO OPTionalize this
@@ -61,8 +61,6 @@ func ValidateCreateUserParams() *nan.Error {
 	// if httpErr != nil || resp.StatusCode != 200 {
 	// 	ExitError(ErrInvalidLicenseFile)
 	// }
-
-	return nil
 }
 
 // ========================================================================================================================
@@ -72,56 +70,64 @@ func ValidateCreateUserParams() *nan.Error {
 // - Check Params
 // - Register TAC user : insert record in db guacamode/talend_tac
 // ========================================================================================================================
-func RegisterUser(p AccountParams) *nan.Error {
+func RegisterUser(accountParam AccountParams) {
+	ValidateCreateUserParams(accountParam)
 
-	G_Account = p
-
-	if err := ValidateCreateUserParams(); err != nil {
-		return err
-	}
-
-	Log("STARTING registerUser for: %s", G_Account.Email)
+	Log("STARTING registerUser for: %s", accountParam.Email)
 
 	// Activation fails if no license specified
 	// TODO Make license checking configurable, as a plugin or optional prerequisite step
-	if G_Account.License == "" {
-		G_Account.License = "n/a"
+	if accountParam.License == "" {
+		accountParam.License = "n/a"
 	}
 
 	numReg, err := g_Db.CountRegisteredUsers()
 	if err != nil {
-		return LogErrorCode(ErrIssueWithAccountsDb)
+		ExitError(ErrIssueWithAccountsDb)
 	} else if numReg >= nan.Config().Proxy.MaxNumRegistrations {
-		return LogErrorCode(ErrMaxNumAccountsRegistered)
+		ExitError(ErrMaxNumAccountsRegistered)
 	}
 
-	bRegistered, err := g_Db.IsUserRegistered(G_Account.Email)
+	bRegistered, err := g_Db.IsUserRegistered(accountParam.Email)
 	if err != nil {
-		return LogErrorCode(ErrIssueWithAccountsDb)
+		ExitError(ErrIssueWithAccountsDb)
 	} else if bRegistered {
-		return LogErrorCode(ErrAccountExists)
+		ExitError(ErrAccountExists)
 	}
 
-	G_ProcRegisterProxyUser.sam = "unactivated"
-	G_ProcRegisterProxyUser.Do()
-
-	// Store user parameters on disk so that they can be recovered easily by the next call to activateUser
-
-	if CreateUserWorkspaceDir() {
-		sUserAccountParams := fmt.Sprintf("%s\n%s\n%s\n%s\n%s",
-			G_Account.FirstName, G_Account.LastName, G_Account.Email, G_Account.Password, G_Account.License)
-
-		sUserParamsFilePath := fmt.Sprintf("%s/studio/%s/account_params", nan.Config().CommonBaseDir, G_Account.Email)
-
-		if err := ioutil.WriteFile(sUserParamsFilePath, []byte(sUserAccountParams), 0777); err != nil {
-			LogError("Failed to save user account params into workspace file : %s", sUserParamsFilePath)
-			return nan.ErrSomethingWrong
+	var (
+		user User = User{
+			Activated:    false,
+			Email:        accountParam.Email,
+			Firstname:    accountParam.FirstName,
+			Lastname:     accountParam.LastName,
+			Password:     accountParam.Password,
+			Sam:          "",
+			CreationTime: "",
 		}
+		userJson []byte
+	)
+
+	userJson, e := json.Marshal(user)
+	if e != nil {
+		ExitError(nan.ErrSomethingWrong)
 	}
 
-	//TODO ExitOk : make this behaviour configurable : exit or just print
+	e = g_Db.Update(
+		func(tx *bolt.Tx) error {
+			bucket, e := tx.CreateBucketIfNotExists([]byte("users"))
+			if e != nil {
+				ExitError(nan.ErrSomethingWrong)
+			}
+
+			return bucket.Put([]byte(accountParam.Email), userJson)
+		})
+
+	if e != nil {
+		ExitError(nan.ErrSomethingWrong)
+	}
+
 	nan.PrintOk(OkAccountBeingCreated)
-	return nil
 }
 
 // ========================================================================================================================
@@ -130,39 +136,65 @@ func RegisterUser(p AccountParams) *nan.Error {
 // Does:
 // - Return list of users
 // ========================================================================================================================
-func ListUserEmails() ([]string, *nan.Error) {
+func ListUsers() []User {
+	var (
+		user  User
+		users []User
+	)
 
-	var userNames []string
-
-	rows, err := g_Db.Query("select user_id, username from guacamole_user")
-	if err != nil {
-		return nil, LogErrorCode(ErrIssueWithAccountsDb)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var userId, userName string
-		err := rows.Scan(&userId, &userName)
-		if err != nil {
-			return nil, LogErrorCode(ErrIssueWithDbResult)
-		} else if userName != "guacadmin" {
-			userNames = append(userNames, userName)
+	g_Db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte("users"))
+		if bucket == nil {
+			return errors.New("Bucket 'users' doesn't exist")
 		}
-	}
-	err = rows.Err()
-	if err != nil {
-		return nil, LogErrorCode(ErrIssueWithDbResult)
-	}
 
-	return userNames, nil
+		cursor := bucket.Cursor()
+		for key, value := cursor.First(); key != nil; key, value = cursor.Next() {
+			json.Unmarshal(value, &user)
+			users = append(users, user)
+		}
+
+		return nil
+	})
+
+	return users
+}
+
+func UpdateUserPassword(Email string, Password string) bool {
+	var (
+		user   User
+		result bool = false
+	)
+
+	g_Db.Batch(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte("users"))
+		if bucket == nil {
+			return errors.New("Bucket 'users' doesn't exist")
+		}
+
+		cursor := bucket.Cursor()
+		for key, value := cursor.First(); key != nil; key, value = cursor.Next() {
+			if string(key) == Email {
+				json.Unmarshal(value, &user)
+
+				user.Password = Password
+				jsonUser, _ := json.Marshal(user)
+				bucket.Put([]byte(user.Email), jsonUser)
+				result = true
+				break
+			}
+		}
+
+		return nil
+	})
+
+	Log("TODO : Call LDAP plugin to update passwords")
+
+	return result
 }
 
 // Returns FirstName LastName Email Password License
-func GetUserAccountParamsForActivation(_Email string) (string, string, string, string, string, *nan.Error) {
-
-	var FirstName, LastName, tmpEmail, Password, License string
-
-	var retCode *nan.Error = nil
+func GetUserAccountParamsForActivation(_Email string) (string, string, string, string, string) {
 
 	// Reload user account params from workspace
 	sUserParamsFilePath := fmt.Sprintf("%s/studio/%s/account_params", nan.Config().CommonBaseDir, _Email)
@@ -171,21 +203,20 @@ func GetUserAccountParamsForActivation(_Email string) (string, string, string, s
 	var bytesRead []byte
 
 	if bytesRead, err = ioutil.ReadFile(sUserParamsFilePath); err != nil {
-		retCode = nan.Errorf("Failed to read user account params from workspace file : <%s> with error : %s",
-			sUserParamsFilePath,
-			err.Error())
-	} else {
-
-		nItemsParsed, err := fmt.Sscanf(string(bytesRead), "%s\n%s\n%s\n%s\n%s",
-			&FirstName, &LastName, &tmpEmail, &Password, &License)
-
-		if err != nil || nItemsParsed != 5 {
-			retCode = nan.Errorf("Failed to parse user account params from workspace file : %s, read %d items with error:",
-				sUserParamsFilePath, nItemsParsed, err.Error())
-		}
+		nan.ExitErrorf(0, "Failed to read user account params from workspace file : %s", sUserParamsFilePath)
 	}
 
-	return FirstName, LastName, tmpEmail, Password, License, retCode
+	var FirstName, LastName, tmpEmail, Password, License string
+
+	nItemsParsed, err := fmt.Sscanf(string(bytesRead), "%s\n%s\n%s\n%s\n%s",
+		&FirstName, &LastName, &tmpEmail, &Password, &License)
+
+	if err != nil || nItemsParsed != 5 {
+		nan.ExitErrorf(0, "Failed to parse user account params from workspace file : %s, read %d items",
+			sUserParamsFilePath, nItemsParsed)
+	}
+
+	return FirstName, LastName, tmpEmail, Password, License
 }
 
 // ========================================================================================================================
@@ -195,13 +226,16 @@ func GetUserAccountParamsForActivation(_Email string) (string, string, string, s
 // - Check Params
 // - Register TAC user : insert record in db guacamode/talend_tac
 // ========================================================================================================================
-func ActivateUser(p AccountParams) *nan.Error {
-	var retCode *nan.Error
+func ActivateUser(p AccountParams) {
 
 	G_Account = p
 
+	//[OPT] was previously needed for single executalbles
+	//InitialiseDb()
+	//defer ShutdownDb()
+
 	if !nan.ValidEmail(G_Account.Email) {
-		return LogErrorCode(nan.ErrPbWithEmailFormat)
+		ExitError(nan.ErrPbWithEmailFormat)
 	}
 
 	Log("STARTING activateUser for: %s", G_Account.Email)
@@ -211,58 +245,49 @@ func ActivateUser(p AccountParams) *nan.Error {
 	if maxNumAccounts := nan.Config().Proxy.MaxNumAccounts; maxNumAccounts > 0 {
 
 		if nAccounts, err := g_Db.CountActiveUsers(); err != nil {
-			return LogErrorCode(ErrIssueWithAccountsDb)
+			ExitError(ErrIssueWithAccountsDb)
 		} else if nAccounts >= maxNumAccounts {
-			return LogErrorCode(ErrMaxNumAccountsReached)
+			ExitError(ErrMaxNumAccountsReached)
 		}
 	}
 
 	// User not registered yet ?
 
 	if bRegistered, err := g_Db.IsUserRegistered(G_Account.Email); err != nil {
-		return LogErrorCode(ErrIssueWithAccountsDb)
+		ExitError(ErrIssueWithAccountsDb)
 	} else if !bRegistered {
-		return LogErrorCode(ErrAccountNotRegistered)
+		ExitError(ErrAccountNotRegistered)
 	}
 
 	// If user already activated then do nothing
 	if bValue, _ := g_Db.IsUserActivated(G_Account.Email); bValue {
-		return LogErrorCode(ErrAccountActivated)
+		ExitOk(ErrAccountActivated)
 	}
 
 	tmpEmail := ""
-	G_Account.FirstName, G_Account.LastName, tmpEmail, G_Account.Password, G_Account.License, retCode =
+	G_Account.FirstName, G_Account.LastName, tmpEmail, G_Account.Password, G_Account.License =
 		GetUserAccountParamsForActivation(G_Account.Email)
-
-	if retCode != nil {
-		return nan.LogErrorCode(retCode)
-	}
 
 	if G_Account.Email != tmpEmail {
 		LogError("[INCONSISTENCY] Email passed as parameter (%s) doesn't match email loaded in account params: %s",
 			G_Account.Email, tmpEmail)
 	}
 
+	//defer UndoIfFailed(G_ProcCreateTac)
+	//[OPT] Create account resource such as TAC VM
+	// G_ProcCreateTac.Do()
+
 	//defer UndoIfFailed(G_ProcCreateWinUser)
-	G_ProcCreateWinUser.Fqdn = "n/a"
+	G_ProcCreateWinUser.Fqdn = "n/a" //[OPT] = G_ProcCreateTac.Ans.TacUrl
 	G_ProcCreateWinUser.Do()
 
 	if G_ProcCreateWinUser.out.sam == "" {
-		return LogErrorCode(ErrIssueWithTacProvisioning)
+		ExitError(ErrIssueWithTacProvisioning)
 	}
 
-	g_Db.UpdateConnectionUserNameForEmail(G_Account.Email, G_ProcCreateWinUser.out.sam)
+	g_Db.UpdateUserSamForEmail(G_Account.Email, G_ProcCreateWinUser.out.sam)
 
-	// Add owncloud user
-	// =================
-
-	resp := ""
-	params := fmt.Sprintf(`{ "username" : "%s", "password" : "%s" }`, G_Account.Email, G_Account.Password)
-	if err := g_PluginOwncloud.Call("Owncloud.AddUser", params, &resp); err != nil {
-		LogError("Plugin method Owncloud.AddUser failed with error: ", err.Error())
-	}
-
-	return OkAccountBeingActivated
+	ExitOk(OkAccountBeingActivated)
 }
 
 // ====================================================================================================
@@ -301,47 +326,45 @@ func CreateUserWorkspaceDir() bool {
 	return true
 }
 
-func TestWinExe(sam string) *nan.Error {
+func TestWinExe(sam string) {
 
 	sWindowsServerSecurityFile := fmt.Sprintf(`\\winad.intra.nanocloud.com\NETLOGON\%s.setSecurity.bat`, sam)
 	nan.Debug("Invoking WinExe on file:" + sWindowsServerSecurityFile)
 	cmd := exec.Command(nan.Config().Proxy.WinExe,
-		"-U", "intra.nanocloud.com/Administrator%3password",
-		"--runas=intra.nanocloud.com/Administrator%3password", "//10.20.12.10", //TODOHARDCODED
+		"-U", "intra.nanocloud.com/Administrator%3nexbAie2050",
+		"--runas=intra.nanocloud.com/Administrator%3nexbAie2050", "//10.20.12.10", //TODOHARDCODED
 		sWindowsServerSecurityFile)
 
 	if out, err := cmd.Output(); err != nil {
 		Log("Error <%s> returned by WinExe when running file <%s> with output: <%s>", err, sWindowsServerSecurityFile, out)
-		return LogErrorCode(nan.ErrSomethingWrong)
+		ExitError(nan.ErrSomethingWrong)
 	}
-
-	return nil
 }
 
-func (p *ProcCreateWinUser) Do() *nan.Error {
+func (p *ProcCreateWinUser) Do() {
 
 	var err error
 
 	if nan.DryRun || nan.ModeRef {
 		Log("Creating Windows user + LDAP declaration")
-		return nil
+		return
 	}
 
 	// TODO: Remove these check, redundant with earlier check ?
 	if !nan.ValidEmail(G_Account.Email) {
-		return LogErrorCode(nan.ErrPbWithEmailFormat)
+		ExitError(nan.ErrPbWithEmailFormat)
 	}
 
 	if !nan.ValidPassword(G_Account.Password) {
-		return LogErrorCode(nan.ErrPasswordNonCompliant)
+		ExitError(nan.ErrPasswordNonCompliant)
 	}
 
 	if !G_TwoStageActivation {
 		bRegistered, err := g_Db.IsUserRegistered(G_Account.Email)
 		if err != nil {
-			return LogErrorCode(ErrIssueWithAccountsDb)
+			ExitError(ErrIssueWithAccountsDb)
 		} else if bRegistered {
-			return LogErrorCode(ErrAccountExists)
+			ExitError(ErrAccountExists)
 		}
 	}
 
@@ -367,12 +390,7 @@ func (p *ProcCreateWinUser) Do() *nan.Error {
 	params = fmt.Sprintf(`{ "UserEmail" : "%s", "password" : "%s" }`, G_Account.Email, G_Account.Password)
 
 	for idx := 0; idx < 3; idx++ {
-
-		if err := g_PluginLdap.Call("Ldap.AddUser", params, &resp); err != nil {
-			LogError("Failed to contact plugin with error %s", err.Error())
-		}
-
-		//TODO add wait time
+		g_PluginLdap.Call("Ldap.AddUser", params, &resp)
 
 		if resp[0] != '$' {
 			LogError("Failed to add LDAP user, got output: <%s>. Retrying for user <%s> and password <%s>", resp, G_Account.Email, G_Account.Password)
@@ -451,7 +469,7 @@ func (p *ProcCreateWinUser) Do() *nan.Error {
 
 	if err = exec.Command("/usr/bin/scp", samFilePath, "Administrator@10.20.12.20:/cygdrive/c/Windows/SYSVOL/domain/scripts/").Run(); err != nil {
 		Log("Error when attempting to scp file: %s on server", samFilePath)
-		return LogErrorCode(nan.ErrSomethingWrong)
+		ExitError(nan.ErrSomethingWrong)
 	}
 
 	// Setup, upload and execute the security script on Windows Server
@@ -477,7 +495,7 @@ func (p *ProcCreateWinUser) Do() *nan.Error {
 	if err = exec.Command("/usr/bin/scp", sUserSecurityScriptPath,
 		"Administrator@10.20.12.20:/cygdrive/c/Windows/SYSVOL/domain/scripts/").Run(); err != nil {
 		Log("Error when attempting to scp file: %s on server", sUserSecurityScriptPath)
-		return LogErrorCode(nan.ErrSomethingWrong)
+		ExitError(nan.ErrSomethingWrong)
 	}
 
 	// Execute then delete security setup script on Windows Server
@@ -491,63 +509,65 @@ func (p *ProcCreateWinUser) Do() *nan.Error {
 		sWindowsServerSecurityFile := fmt.Sprintf(`\\winad.intra.nanocloud.com\NETLOGON\%s.setSecurity.bat`, p.out.sam)
 		nan.Debug("Invoking WinExe on file:" + sWindowsServerSecurityFile)
 		cmd := exec.Command(nan.Config().Proxy.WinExe,
-			"-U", "intra.nanocloud.com/Administrator%3password",
-			"--runas=intra.nanocloud.com/Administrator%3password", "//10.20.12.10", //TODO HARDCODED
+			"-U", "intra.nanocloud.com/Administrator%3nexbAie2050",
+			"--runas=intra.nanocloud.com/Administrator%3nexbAie2050", "//10.20.12.10", //TODO HARDCODED
 			sWindowsServerSecurityFile)
 		if out, err := cmd.Output(); err != nil {
 			Log("Error <%s> returned by WinExe when running file <%s> with output: <%s>", err, sWindowsServerSecurityFile, out)
-			return nan.ErrSomethingWrong
+			ExitError(nan.ErrSomethingWrong)
 		}
 
 		// TODO add timeout + retry on this call + message: did not respond in a timely manner
 
 		cmd = exec.Command(nan.Config().Proxy.WinExe,
-			"-U", "intra.nanocloud.com/Administrator%3password",
-			"--runas=intra.nanocloud.com/Administrator%3password", "//10.20.12.10", //TODO HARDCODED
+			"-U", "intra.nanocloud.com/Administrator%3nexbAie2050",
+			"--runas=intra.nanocloud.com/Administrator%3nexbAie2050", "//10.20.12.10", //TODO HARDCODED
 			"cmd.exe /C DEL "+sWindowsServerSecurityFile)
 
 		if out, err := cmd.Output(); err != nil {
 			Log("Error code %s returned by WinExe when running file : %s with output: %s", err, sWindowsServerSecurityFile, out)
-			return nan.ErrSomethingWrong
+			ExitError(nan.ErrSomethingWrong)
 		}
 	}
 
-	return nil
+	p.Result = nil
 }
 
-func (p *ProcCreateWinUser) Undo() *nan.Error {
+func (p *ProcCreateWinUser) Undo(accountParams AccountParams) {
+
+	p.Result = nil
 
 	// Refuse deletion if user account doesn't exist
-	bRegistered, err := g_Db.IsUserRegistered(G_Account.Email)
+	bRegistered, err := g_Db.IsUserRegistered(accountParams.Email)
 	if err != nil {
-		return LogErrorCode(ErrIssueWithAccountsDb)
+		ExitError(ErrIssueWithAccountsDb)
 	} else if !bRegistered {
-		Log("Email address not listed in accounts database: %s", G_Account.Email)
+		Log("Email address not listed in accounts database")
 	}
 
-	params := fmt.Sprintf(`{ "UserEmail" : "%s" }`, G_Account.Email)
+	params := fmt.Sprintf(`{ "UserEmail" : "%s" }`, accountParams.Email)
 	resp := ""
 
 	g_PluginLdap.Call("Ldap.ForceDisableAccount", params, &resp)
 	if resp == "0" {
 		LogError("Ldap.ForceDisableAccount failed")
 	}
-	sam, e := g_Db.GetSamFromEmail(G_Account.Email)
+	sam, e := g_Db.GetSamFromEmail(accountParams.Email)
 	if e != nil {
-		return LogErrorCode(ErrIssueWithAccountsDb)
+		ExitError(ErrIssueWithAccountsDb)
 	}
 
 	sam = strings.Trim(sam, " ")
 
 	if sam == "" || sam == "unactivated" {
 		LogError("Email ok but found no matching SAM user")
-		return nan.ErrSomethingWrong
+		return
 	}
 
 	// Delete Talend Studio instance : logoff user and remove user profile
 
 	removeProfileSourcePath := fmt.Sprintf("%s/studio/removeProfile.cmd", nan.Config().CommonBaseDir)
-	removeProfileDestPath := fmt.Sprintf("%s/studio/%s/%s.removeProfile.bat", nan.Config().CommonBaseDir, G_Account.Email, sam)
+	removeProfileDestPath := fmt.Sprintf("%s/studio/%s/%s.removeProfile.bat", nan.Config().CommonBaseDir, accountParams.Email, sam)
 
 	if nan.CopyFile(removeProfileSourcePath, removeProfileDestPath) != nil {
 		LogError("Failed to copy removeProfile for preparation")
@@ -568,8 +588,8 @@ func (p *ProcCreateWinUser) Undo() *nan.Error {
 		Log("Requested remote exec: %s", AdRemoveProfileUncPath)
 
 		cmd := exec.Command(nan.Config().Proxy.WinExe,
-			"-U", "intra.nanocloud.com/Administrator%3password",
-			"--runas=intra.nanocloud.com/Administrator%3password", "//10.20.12.10", //TODO HARDCODED
+			"-U", "intra.nanocloud.com/Administrator%3nexbAie2050",
+			"--runas=intra.nanocloud.com/Administrator%3nexbAie2050", "//10.20.12.10", //TODO HARDCODED
 			AdRemoveProfileUncPath)
 		if out, err := cmd.Output(); err != nil {
 			Log("Error returned by WinExe when running user removeProfile.bat: %s, outpout: %s", err, string(out))
@@ -578,8 +598,8 @@ func (p *ProcCreateWinUser) Undo() *nan.Error {
 		// Delete the removeProfile File on Windows Server
 
 		cmd = exec.Command(nan.Config().Proxy.WinExe,
-			"-U", "intra.nanocloud.com/Administrator%3password",
-			"--runas=intra.nanocloud.com/Administrator%3password", "//10.20.12.10", //TODO HARDCODED
+			"-U", "intra.nanocloud.com/Administrator%3nexbAie2050",
+			"--runas=intra.nanocloud.com/Administrator%3nexbAie2050", "//10.20.12.10", //TODO HARDCODED
 			"cmd.exe /C DEL "+AdRemoveProfileUncPath)
 		if out, err := cmd.Output(); err != nil {
 			Log("Error code %s returned by WinExe after attempting to delete removeProfile script: %s", err, string(out))
@@ -591,8 +611,8 @@ func (p *ProcCreateWinUser) Undo() *nan.Error {
 		AdConfigScriptUncPath := fmt.Sprintf(`\\winad.intra.nanocloud.com\NETLOGON\%s.config.bat`, sam)
 
 		cmd = exec.Command(nan.Config().Proxy.WinExe,
-			"-U", "intra.nanocloud.com/Administrator%3password",
-			"--runas=intra.nanocloud.com/Administrator%3password", "//10.20.12.10", //TODO HARDCODED
+			"-U", "intra.nanocloud.com/Administrator%3nexbAie2050",
+			"--runas=intra.nanocloud.com/Administrator%3nexbAie2050", "//10.20.12.10", //TODO HARDCODED
 			"cmd.exe /C DEL "+AdConfigScriptUncPath)
 		if out, err := cmd.Output(); err != nil {
 			Log("Error %s returned by WinExe when attempting to delete : %s with output: %s", err, AdConfigScriptUncPath, out)
@@ -600,7 +620,7 @@ func (p *ProcCreateWinUser) Undo() *nan.Error {
 		}
 	}
 
-	sFilePattern := fmt.Sprintf("%s/studio/%s/*", nan.Config().CommonBaseDir, G_Account.Email)
+	sFilePattern := fmt.Sprintf("%s/studio/%s/*", nan.Config().CommonBaseDir, accountParams.Email)
 
 	workspaceFilenames, _ := filepath.Glob(sFilePattern)
 	for _, fileName := range workspaceFilenames {
@@ -609,27 +629,10 @@ func (p *ProcCreateWinUser) Undo() *nan.Error {
 		}
 	}
 
-	workspaceDir := fmt.Sprintf("%s/studio/%s", nan.Config().CommonBaseDir, G_Account.Email)
+	workspaceDir := fmt.Sprintf("%s/studio/%s", nan.Config().CommonBaseDir, accountParams.Email)
 	if err := os.Remove(workspaceDir); err != nil {
 		LogError("Error when deleting directory: %s, err: %s", workspaceDir, err)
-		return nan.ErrSomethingWrong
 	}
-
-	return nil
-}
-
-// ====================================================================================================
-// Procedure: UpdateUserPassword
-// =>
-// ====================================================================================================
-func UpdateUserPassword(email string, password string) *nan.Error {
-
-	cmd := exec.Command(filepath.Join(nan.Config().CommonBaseDir, "userPassword.sh"), email, password)
-	if out, err := cmd.Output(); err != nil {
-		nan.LogError("Error %s returned by userPassword script: %s", err, out)
-		return nan.ErrPasswordNotUpdated
-	}
-	return nil
 }
 
 // ====================================================================================================
@@ -642,200 +645,19 @@ type ProcRegisterProxyUser struct {
 	sam string
 }
 
-func (p *ProcRegisterProxyUser) Do() *nan.Error {
+func (p *ProcRegisterProxyUser) Do() {
 
 	if nan.DryRun || nan.ModeRef {
 		Log("DRYRUN: Registring user in guacamole database")
-		return nil
+		return
 	}
 
-	// uid := uuid.New()
-	// saltBytes := sha256.Sum256([]byte(uid))
-	// saltString := string(saltBytes[:])
-	// saltHexString := hex.EncodeToString(saltBytes[:])
-
-	// saltedPasswordBytes := sha256.Sum256([]byte(G_Account.Password + saltHexString))
-	// saltedPassword := string(saltedPasswordBytes[:])
-
-	//!!!!!!!!!!!!!!!!!!!!!!!!
-	//TODO : Got a syntax error once with next request. Could be scrambled chars that affect SQL ?
-	//!!!!!!!!!!!!!!!!!!!!!!!!
-	//Log("Email: <%s>, saltString <%s>, saltedPassword <%s>", G_Account.Email, saltString, saltedPassword)
-
-	// guacamole_user
-	// sRequest := fmt.Sprintf("INSERT INTO guacamole_user(username, password_salt, password_hash) VALUES ('%s', '%s', '%s');",
-	// 	G_Account.Email, saltString, saltedPassword)
-
-	// if _, err := g_Db.Exec(sRequest); err != nil {
-	// 	LogError("Failed to insert user data into guacamole_user, error: %s", err)
-	// 	ExitError(ErrSomethingWrong)
-	// }
-
-	if _, err := g_Db.Exec("SET @salt = UNHEX(SHA2(UUID(), 256))"); err != nil {
-		LogError("Failed to compute salt")
-		return nan.ErrSomethingWrong
-	}
-
-	sInsertUserPassword := fmt.Sprintf(`INSERT INTO guacamole_user(username, password_salt, password_hash) 
-		VALUES ('%s', @salt, UNHEX(SHA2(CONCAT('%s', HEX(@salt)), 256)) );`, G_Account.Email, G_Account.Password)
-
-	if _, err := g_Db.Exec(sInsertUserPassword); err != nil {
-		LogError("Failed to insert user data into guacamole_user, error: %s", err)
-		return nan.ErrSomethingWrong
-	}
-
-	// guacamole_connection_group
-	sRequest := fmt.Sprintf("INSERT INTO guacamole_connection_group (connection_group_name, type) VALUES ('%s', '%s')",
-		G_Account.Email, "ORGANIZATIONAL")
-
-	if _, err := g_Db.Exec(sRequest); err != nil {
-		LogError("Failed to insert user data into guacamole_connection_group, error: %s", err)
-		return nan.ErrSomethingWrong
-	}
-
-	// Retrieve group ID
-	sQuery := fmt.Sprintf("select connection_group_id from guacamole_connection_group where connection_group_name='%s' LIMIT 1",
-		G_Account.Email)
-
-	rows, err := g_Db.Query(sQuery)
-	if err != nil {
-		LogError("Failed to select connection_group_id for user %s, error: %s", G_Account.Email, err)
-		return nan.ErrSomethingWrong
-	}
-
-	groupId := ""
-
-	for rows.Next() {
-		if err = rows.Scan(&groupId); err != nil {
-			LogError("Failed to parse result of query on connection_group_id for user %s, error: %s", G_Account.Email, err)
-			return nan.ErrSomethingWrong
-		}
-	}
-
-	// retrieve user ID
-	userId := ""
-
-	sQuery = fmt.Sprintf("select user_id from guacamole_user where username='%s' LIMIT 1", G_Account.Email)
-	rows, err = g_Db.Query(sQuery)
-	if err != nil {
-		LogError("Failed to select user_id for user %s, error: %s", G_Account.Email, err)
-		return nan.ErrSomethingWrong
-	}
-
-	for rows.Next() {
-		if err = rows.Scan(&userId); err != nil {
-			LogError("Failed to parse result of query on connection_group_id for user %s, error: %s", G_Account.Email, err)
-			return nan.ErrSomethingWrong
-		}
-	}
-
-	// guacamole_connection_group_permission
-
-	// Add group to user
-
-	sRequest = fmt.Sprintf("INSERT INTO guacamole_connection_group_permission (user_id, connection_group_id, permission) VALUES (%s, %s, 'READ')",
-		userId, groupId)
-
-	if _, err = g_Db.Exec(sRequest); err != nil {
-		LogError("Failed to insert record into guacamole_connection_group_permission, error : %s", err)
-		return nan.ErrSomethingWrong
-	}
-
-	//TODO OPTIONAL (was done for Talend)
-	connectionName := "Visual"           //ESI 	//"Talend Studio"
-	RemoteAppName := "VisualEnvironment" //ESI 	//"TalendStudiowinx86_64"
-
-	// guacamole_connection
-	sRequest = fmt.Sprintf("INSERT INTO guacamole_connection (connection_name, parent_id,  protocol) VALUES ('%s', '%s', 'rdp')",
-		connectionName, groupId)
-
-	var connId int64
-
-	if result, err := g_Db.Exec(sRequest); err != nil {
-		LogError("Failed to insert record into guacamole_connection, error : %s", err)
-		return nan.ErrSomethingWrong
-	} else {
-		var err error
-		if connId, err = result.LastInsertId(); err != nil {
-			LogError("Failed to get LastInsert from query on guacamole_connection, error : %s", err)
-			return nan.ErrSomethingWrong
-		}
-	}
-
-	insertRequests := []string{
-
-		fmt.Sprintf("INSERT INTO guacamole_connection_parameter VALUES (%d, 'hostname', '10.20.12.10')", connId), //TODO HARDCODED
-		fmt.Sprintf("INSERT INTO guacamole_connection_parameter VALUES (%d, 'port', '3389')", connId),
-		fmt.Sprintf("INSERT INTO guacamole_connection_parameter VALUES (%d, 'username', '%s')", connId, p.sam),
-		fmt.Sprintf("INSERT INTO guacamole_connection_parameter VALUES (%d, 'password', '%s')", connId, G_Account.Password),
-		fmt.Sprintf("INSERT INTO guacamole_connection_parameter VALUES (%d, 'domain', 'intra.nanocloud.com')", connId),
-		fmt.Sprintf("INSERT INTO guacamole_connection_parameter VALUES (%d, 'color-depth', '24')", connId),
-		fmt.Sprintf("INSERT INTO guacamole_connection_parameter VALUES (%d, 'disable-audio', 'true')", connId),
-		fmt.Sprintf("INSERT INTO guacamole_connection_parameter VALUES (%d, 'remote-app', '||%s')", connId, RemoteAppName),
-	}
-
-	for _, requestStr := range insertRequests {
-		if _, err = g_Db.Exec(requestStr); err != nil {
-			LogError("Failed to execute query: [%s], error: %s", requestStr, err)
-			return nan.ErrSomethingWrong
-		}
-	}
-
-	// guacamole_connection_parameter
-
-	// -- Add connection to user
-
-	sRequest = fmt.Sprintf("INSERT INTO guacamole_connection_permission (user_id, connection_id, permission) VALUES ('%s', '%d', 'READ')",
-		userId, connId)
-
-	if _, err := g_Db.Exec(sRequest); err != nil {
-		LogError("Failed to insert record into guacamole_connection_permission, error : %s", err)
-		return nan.ErrSomethingWrong
-	}
-
-	return nil
+	g_Db.AddUser(G_User)
+	// TODO Handle Users connections
 }
 
 // 	Remove Guacamole user
-func (p *ProcRegisterProxyUser) Undo() *nan.Error {
-
-	ok := true
-
-	// Archive the user connection logs
-	sRequest := fmt.Sprintf(`INSERT IGNORE INTO guacamole_deleted_connection_history
-SELECT history_id, guacamole_connection_history.user_id, username, start_date, end_date
-from guacamole_connection_history
-INNER JOIN guacamole_user ON guacamole_connection_history.user_id = guacamole_user.user_id
-WHERE username = '%s'`, G_Account.Email)
-
-	/* Also delete from ? :
-	guacamole_connection_group_permission
-	guacamole_connection_parameter
-	guacamole_connection_permission
-	*/
-
-	if _, err := g_Db.Exec(sRequest); err != nil {
-		LogError("Failed to archive user connection info in table guacamole_deleted_connection_history : %s", err)
-		ok = false
-	}
-
-	// Delete group
-	sRequest = fmt.Sprintf("DELETE FROM guacamole_connection_group WHERE connection_group_name='%s'", G_Account.Email)
-	if _, err := g_Db.Exec(sRequest); err != nil {
-		LogError("Failed to delete record from table guacamole_connection_group, error: ", err)
-		ok = false
-	}
-
-	// Delete user
-	sRequest = fmt.Sprintf("DELETE FROM guacamole_user WHERE username = '%s'", G_Account.Email)
-	if _, err := g_Db.Exec(sRequest); err != nil {
-		LogError("Failed to delete record from table guacamole_user, error: ", err)
-		ok = false
-	}
-
-	if !ok {
-		return LogErrorCode(ErrIssueWithAccountsDb)
-	}
-
-	return nil
+func (p *ProcRegisterProxyUser) Undo() {
+	g_Db.DeleteUser(G_User)
+	// TODO Handle Users connections
 }

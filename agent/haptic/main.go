@@ -32,12 +32,13 @@ var (
 	G_TwoStageActivation bool = true // TODO Legacy behaviour toggler, should disappear in the future
 
 	G_Account AccountParams // Used to store account info used by the workflow procedures
+	G_User    User          // Used to store account info used by the workflow procedures
 
 	// Workflow procedures instances
 	G_ProcRegisterProxyUser = &ProcRegisterProxyUser{}
 	G_ProcCreateWinUser     = &ProcCreateWinUser{}
 
-	g_Db *Db
+	g_Db Db
 
 	g_PluginLdap     *pingo.Plugin
 	g_PluginIaas     *pingo.Plugin
