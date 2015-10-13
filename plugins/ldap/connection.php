@@ -1,9 +1,12 @@
 <?php
+
+include("configuration.php");
+
 function connect_AD()
 {
-  $ldap_server = "ldaps://62.210.211.186";
-  $ldap_user   = "CN=Administrator,CN=Users,DC=intra,DC=nanocloud,DC=com" ;
-  $ldap_pass   = "password" ;
+  global $ldap_server;
+  global $ldap_user;
+  global $ldap_pass;
 
   $ldap_connection = ldap_connect($ldap_server) ;
 

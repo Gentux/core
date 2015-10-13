@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 
 	nan "nanocloud.com/zeroinstall/lib/libnan"
@@ -59,7 +60,6 @@ func main() {
 	// NOTE : libnan has an init() func that's already been called at this point and loaded the configuration file
 
 	if len(os.Args) <= 1 {
-		// TODO Print help message
 		return
 	}
 
@@ -100,6 +100,16 @@ func SetupPlugins() {
 
 	Log("Start plugin Ldap")
 	g_PluginLdap.Start()
+	var (
+		resp                 string
+		pluginLdapJsonParams []byte
+	)
+	pluginLdapJsonParams, _ = json.Marshal(nan.Config().Plugins["Ldap"])
+	err := g_PluginLdap.Call("Ldap.Configure", string(pluginLdapJsonParams), &resp)
+	if err != nil {
+		// TODO Clarify error and string output
+		Log("Error while configuring plugin Ldap : %s", err)
+	}
 	Log("Start plugin Ldap : DONE")
 
 	Log("Start plugin Owncloud")

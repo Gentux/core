@@ -2,6 +2,7 @@
 agent/haptic/public/
 
 # Generated files
+plugins/ldap/configuration.php
 killDB.sh
 
 # Data files
@@ -14,7 +15,6 @@ agent/haptic/plugins/ldap/ldap
 agent/haptic/plugins/owncloud/owncloud
 plugins/ldap/ldap
 plugins/owncloud/owncloud
-
 
 # Logging files
 agent/haptic/activity.log
