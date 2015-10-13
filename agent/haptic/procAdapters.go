@@ -79,3 +79,7 @@ func (o adapter_t) UnpublishApp(Alias string) error {
 
 	return nil
 }
+
+func (o adapter_t) GetVmList() (string, error) {
+	return ListVMs(), nil
+}

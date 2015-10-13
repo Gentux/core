@@ -20,7 +20,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 
 	nan "nanocloud.com/zeroinstall/lib/libnan"
@@ -40,14 +39,14 @@ var (
 	g_Db *Db
 
 	g_PluginLdap     *pingo.Plugin
+	g_PluginIaas     *pingo.Plugin
 	g_PluginOwncloud *pingo.Plugin
 
 	// Aliases useful for this package so that we don't have to have to prefix them with nan all the time
-	ExitOk       = nan.ExitOk
-	ExitError    = nan.ExitError
-	Log          = nan.Log
-	LogError     = nan.LogError
-	LogErrorCode = nan.LogErrorCode
+	ExitOk    = nan.ExitOk
+	ExitError = nan.ExitError
+	Log       = nan.Log
+	LogError  = nan.LogError
 )
 
 // TODO remove hardcoded : intra.nanocloud.com/Administrator%password", "//10.20.12.10
@@ -94,43 +93,50 @@ func main() {
 }
 
 func SetupPlugins() {
-
-	var resp string
-
 	Log("Num plugins referenced in config : %d", len(nan.Config().Plugins))
 
-	// Instanciate plugins
-	// ===================
+	// Iaas
+	g_PluginIaas = pingo.NewPlugin("tcp", "plugins/iaas/iaas")
+	if g_PluginIaas == nil {
+		nan.ExitErrorf(0, "Failed to start plugin Iaas")
+	}
 
 	// LDAP
-	g_PluginLdap = pingo.NewPlugin("tcp", nan.Config().CommonBaseDir+"/plugins/ldap/ldap")
+	g_PluginLdap = pingo.NewPlugin("tcp", "plugins/ldap/ldap")
 	if g_PluginLdap == nil {
-		nan.LogError("Failed to start plugin Ldap")
+		nan.ExitErrorf(0, "Failed to start plugin Ldap")
 	}
 
 	// Owncloud
-	g_PluginOwncloud = pingo.NewPlugin("tcp", nan.Config().CommonBaseDir+"/plugins/owncloud/owncloud")
+	g_PluginOwncloud = pingo.NewPlugin("tcp", "plugins/owncloud/owncloud")
 	if g_PluginOwncloud == nil {
-		nan.LogError("Failed to start plugin Owncloud")
+		nan.ExitErrorf(0, "Failed to start plugin Owncloud")
 	}
 
-	// Start and configure plugins
-	// ===========================
+	Log("Start plugin Iaas")
+	g_PluginIaas.Start()
+	var (
+		resp                 string
+		pluginIaasJsonParams []byte
+	)
+	pluginIaasJsonParams, _ = json.Marshal(nan.Config().Plugins["Iaas"])
+	err := g_PluginIaas.Call("Iaas.Configure", string(pluginIaasJsonParams), &resp)
+	if err != nil {
+		// TODO Clarify error and string output
+		Log("Error while configuring plugin Ldap : %s", err)
+	}
+	Log("Start plugin Iaas : DONE")
 
 	Log("Start plugin Ldap")
 	g_PluginLdap.Start()
-
-	pluginLdapJsonParams, err := json.Marshal(nan.Config().Plugins["Ldap"])
-	if err != nil {
-		LogError("Failed to unmarshall LDAP plugin params")
-		ExitError(nan.ErrConfigError)
-	}
-
+	var (
+		pluginLdapJsonParams []byte
+	)
+	pluginLdapJsonParams, _ = json.Marshal(nan.Config().Plugins["Ldap"])
 	err = g_PluginLdap.Call("Ldap.Configure", string(pluginLdapJsonParams), &resp)
 	if err != nil {
 		// TODO Clarify error and string output
 		Log("Error while configuring plugin Ldap : %s", err)
-		ExitError(nan.ErrPluginError)
 	}
 	Log("Start plugin Ldap : DONE")
 

@@ -41,8 +41,9 @@ func RunServer() {
 	// Setup RPC server
 	pRpcServer := rpc.NewServer()
 	pRpcServer.RegisterCodec(json.NewCodec(), "application/json")
-	pRpcServer.RegisterService(new(ServiceUsers), "")
+	pRpcServer.RegisterService(new(ServiceIaas), "")
 	pRpcServer.RegisterService(new(ServiceApplications), "")
+	pRpcServer.RegisterService(new(ServiceUsers), "")
 
 	http.Handle("/rpc", pRpcServer)
 
