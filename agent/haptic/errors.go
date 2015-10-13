@@ -17,6 +17,7 @@ var (
 	ErrIssueWithTacProvisioning = nan.NewExitCode(13, "Problem during TAC server provisionning")
 	ErrIncorrectNumberOfParams  = nan.NewExitCode(14, "Received incorrect number of parameters")
 	ErrIssueWithAccountsDb      = nan.NewExitCode(15, "Could not access users database")
+	ErrIssueWithDbResult        = nan.NewExitCode(16, "Could not parse database result")
 
 	ErrMaxNumAccountsRegistered = nan.NewExitCode(4, "System has reached maximum number of registrations")
 	ErrMaxNumAccountsReached    = nan.NewExitCode(4, "System has reached maximum number of accounts")

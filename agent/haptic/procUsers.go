@@ -7,7 +7,6 @@ import (
 
 	nan "nanocloud.com/zeroinstall/lib/libnan"
 
-	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 
 	"io/ioutil"
@@ -16,13 +15,6 @@ import (
 	"os/exec"
 	"strings"
 )
-
-// ========================================================================================================================
-
-// We wrap sql.DB in a user struct to which we can add our own methods
-type Db struct {
-	*sql.DB
-}
 
 // ========================================================================================================================
 // TYPES
@@ -73,59 +65,6 @@ func ValidateCreateUserParams() {
 }
 
 // ========================================================================================================================
-// Procedure: CreateAccount
-//
-// Does:
-// - Check Params
-// - Request pooled TAC VM from TAC host
-// - Register TAC user : insert record in db guacamode/talend_tac
-// - CreateUser (LDAP, AD)
-// ========================================================================================================================
-func CreateAccount(p AccountParams) {
-
-	G_Account = p
-
-	InitialiseDb()
-	defer ShutdownDb()
-
-	ValidateCreateUserParams()
-
-	if !nan.DryRun && !nan.ModeRef {
-
-		// bActive, err := g_Db.IsUserActivated(G_Account.Email)
-		// if err != nil {
-		// 	ExitError(ErrIssueWithAccountsDb)
-		// } else if bActive {
-		// 	ExitError(ErrAccountExists)
-		// }
-
-		// if maxNumAccounts := nan.Config().Proxy.MaxNumAccounts; maxNumAccounts > 0 {
-
-		// 	if nAccounts, err := g_Db.CountActiveUsers(); err != nil {
-		// 		ExitError(ErrIssueWithAccountsDb)
-		// 	} else if nAccounts >= maxNumAccounts {
-		// 		ExitError(ErrMaxNumAccountsReached)
-		// 	}
-		// }
-
-	}
-
-	// Email <=> TAC uuid
-	//defer UndoIfFailed(G_ProcCreateTac)
-	//[OPT] Create account resource such as TAC VM
-	//G_ProcCreateTac.Do()
-
-	//defer UndoIfFailed(G_ProcCreateWinUser)
-	G_ProcCreateWinUser.Fqdn = "n/a" // [OPT] G_ProcCreateTac.Ans.TacUrl
-	G_ProcCreateWinUser.Do()
-
-	G_ProcRegisterProxyUser.sam = G_ProcCreateWinUser.out.sam
-	G_ProcRegisterProxyUser.Do()
-
-	ExitOk(OkAccountBeingCreated)
-}
-
-// ========================================================================================================================
 // Procedure: RegisterUser
 //
 // Does:
@@ -136,7 +75,7 @@ func RegisterUser(p AccountParams) {
 
 	G_Account = p
 
-	InitialiseDb()
+	//InitialiseDb()
 	//[OPT] was done for Talend single executables
 	//defer ShutdownDb()
 
@@ -192,6 +131,40 @@ func RegisterUser(p AccountParams) {
 
 	//TODO ExitOk : make this behaviour configurable : exit or just print
 	nan.PrintOk(OkAccountBeingCreated)
+}
+
+// ========================================================================================================================
+// Procedure: ListUsers
+//
+// Does:
+// - Return list of users
+// ========================================================================================================================
+func ListUsers() []string {
+
+	var (
+		user_id  int
+		username string
+		users    []string
+	)
+
+	rows, err := g_Db.Query("select user_id, username from guacamole_user")
+	if err != nil {
+		ExitError(ErrIssueWithAccountsDb)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		err := rows.Scan(&user_id, &username)
+		if err != nil {
+			ExitError(ErrIssueWithDbResult)
+		}
+		users = append(users, username)
+	}
+	err = rows.Err()
+	if err != nil {
+		ExitError(ErrIssueWithDbResult)
+	}
+	return users
 }
 
 // Returns FirstName LastName Email Password License

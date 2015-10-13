@@ -2,13 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"os"
 
 	nan "nanocloud.com/zeroinstall/lib/libnan"
 
 	"github.com/dullgiulio/pingo" // for plugins
-
-	"os"
 )
 
 var (
@@ -32,29 +30,7 @@ var (
 	LogError  = nan.LogError
 )
 
-func TestLdap() {
-
-	// 	g_PluginLdap.Call("Ldap.Configure", params, &resp)
-
-	var resp string
-
-	params := `{ "userid" : "fred101@m.fr" }`
-	g_PluginLdap.Call("Ldap.ForceDisableAccount", params, &resp)
-
-	fmt.Println("Resp 0: ", resp)
-
-	params = `{ "userid" : "fred101@m.fr", "password" : "Secr3TPass1942+" }`
-	fmt.Println("Testing ldap with:", params)
-	g_PluginLdap.Call("Ldap.AddUser", params, &resp)
-
-	if resp[0] != '$' {
-		LogError("Failed to add LDAP user, got output: <%s>. Retrying for user <%s> and password <%s>", resp, G_Account.Email, G_Account.Password)
-	} else {
-		fmt.Println("Resp 1: ", resp)
-	}
-}
-
-// TODO remove hardcoded : intra.nanocloud.com/Administrator%3nexbAie2050", "//10.20.12.10
+// TODO remove hardcoded : intra.nanocloud.com/Administrator%password", "//10.20.12.10
 func main() {
 
 	// NOTE : libnan has an init() func that's already been called at this point and loaded the configuration file
@@ -83,7 +59,6 @@ func main() {
 }
 
 func SetupPlugins() {
-
 	Log("Num plugins referenced in config : %d", len(nan.Config().Plugins))
 
 	// LDAP

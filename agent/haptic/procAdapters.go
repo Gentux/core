@@ -2,7 +2,15 @@ package main
 
 import (
 	"fmt"
+
+	"database/sql"
+	_ "github.com/go-sql-driver/mysql"
 )
+
+// We wrap sql.DB in a user struct to which we can add our own methods
+type Db struct {
+	*sql.DB
+}
 
 type adapter_t struct{}
 
@@ -35,32 +43,8 @@ func (o adapter_t) ActivateUser(_Email string) error {
 }
 
 func (o adapter_t) GetUsers() ([]string, error) {
-	var (
-		user_id  int
-		username string
-		users    []string
-	)
 
-	rows, err := g_Db.Query("select user_id, username from guacamole_user")
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		err := rows.Scan(&user_id, &username)
-		if err != nil {
-			fmt.Println(err)
-		}
-		users = append(users, username)
-	}
-	err = rows.Err()
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-	return users, nil
+	return ListUsers(), nil
 }
 
 func (o adapter_t) UpdateUserEmail(_PrevEmail, _NewEmail string) error {
@@ -85,4 +69,9 @@ func (o adapter_t) DeleteUser(_Email string) error {
 	DeleteUser(params)
 
 	return nil
+}
+
+func (o adapter_t) GetApplications() (string, error) {
+
+	return ListApplications(), nil
 }

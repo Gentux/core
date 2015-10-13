@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	//"errors"
 	"log"
 	"net/http"
 )
@@ -10,13 +9,6 @@ import (
 var ()
 
 type ServiceUsers struct {
-}
-
-type NoArgs struct {
-}
-
-type DefaultReply struct {
-	Result bool
 }
 
 // ====================================================================================================
@@ -55,7 +47,7 @@ func (p *ServiceUsers) GetList(r *http.Request, args *NoArgs, reply *GetUsersLis
 // ====================================================================================================
 
 func (p *ServiceUsers) GetUser(r *http.Request, args *NoArgs, reply *DefaultReply) error {
-	log.Println("GetUser")
+	log.Println("TODO GetUser (not sure it need to be done though)")
 	return nil
 }
 
@@ -66,6 +58,13 @@ type RegisterUserParam struct {
 }
 
 func (p *ServiceUsers) RegisterUser(r *http.Request, args *RegisterUserParam, reply *DefaultReply) error {
+
+	adapter.RegisterUser(args.Firstname, args.Lastname, args.Email, args.Password)
+
+	return nil
+}
+
+func (p *ServiceUsers) UpdateUser(r *http.Request, args *RegisterUserParam, reply *DefaultReply) error {
 
 	adapter.RegisterUser(args.Firstname, args.Lastname, args.Email, args.Password)
 
@@ -94,6 +93,8 @@ type DeleteUserParam struct {
 func (p *ServiceUsers) DeleteUser(r *http.Request, args *DeleteUserParam, reply *DefaultReply) error {
 
 	adapter.DeleteUser(args.Email)
+
+	reply.Result = true
 
 	return nil
 }
