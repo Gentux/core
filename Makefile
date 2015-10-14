@@ -2,32 +2,32 @@
 
 .DEFAULT_GOAL := haptic
 
-owncloud: ./bin/haptic/plugins/owncloud/owncloud
+owncloud: ../bin/haptic/plugins/owncloud/owncloud
 
-./bin/haptic/plugins/owncloud/owncloud: ./plugins/owncloud/main.go
-	go build -o ./bin/haptic/plugins/owncloud/owncloud nanocloud.com/plugins/owncloud
+../bin/haptic/plugins/owncloud/owncloud: ../plugins/owncloud/main.go
+	go build -o ../bin/haptic/plugins/owncloud/owncloud nanocloud.com/plugins/owncloud
 
-ldap: ./bin/haptic/plugins/ldap/ldap
+ldap: ../bin/haptic/plugins/ldap/ldap
 
-./bin/haptic/plugins/ldap/ldap: ./plugins/ldap/main.go
-	go build -o ./bin/haptic/plugins/ldap/ldap nanocloud.com/plugins/ldap
+../bin/haptic/plugins/ldap/ldap: ../plugins/ldap/main.go
+	go build -o ../bin/haptic/plugins/ldap/ldap nanocloud.com/plugins/ldap
 
-iaas: ./bin/haptic/plugins/iaas/iaas
+iaas: ../bin/haptic/plugins/iaas/iaas
 
-./bin/haptic/plugins/iaas/iaas: ./plugins/iaas/main.go
-	go build -o ./bin/haptic/plugins/iaas/iaas nanocloud.com/plugins/iaas
+../bin/haptic/plugins/iaas/iaas: ../plugins/iaas/main.go
+	go build -o ../bin/haptic/plugins/iaas/iaas nanocloud.com/plugins/iaas
 
-haptic: iaas ldap owncloud ./bin/haptic/haptic
+haptic: iaas ldap owncloud ../bin/haptic/haptic
 
-.PHONY: ./bin/haptic/haptic
-./bin/haptic/haptic:
-	go build -o ./bin/haptic/haptic nanocloud.com/agent/haptic
+.PHONY: ../bin/haptic/haptic
+../bin/haptic/haptic:
+	go build -o ../bin/haptic/haptic nanocloud.com/core/haptic
 
 setup:
-	mkdir -p ./bin/haptic/plugins
-	mkdir -p ./bin/haptic/plugins/iaas
-	mkdir -p ./bin/haptic/plugins/ldap
-	mkdir -p ./bin/haptic/plugins/owncloud
+	mkdir -p ../bin/haptic/plugins
+	mkdir -p ../bin/haptic/plugins/iaas
+	mkdir -p ../bin/haptic/plugins/ldap
+	mkdir -p ../bin/haptic/plugins/owncloud
 
 	echo "Installing go packages dependencies"
 	go get github.com/dullgiulio/pingo
@@ -38,36 +38,40 @@ setup:
 	go get github.com/gorilla/rpc
 	go get github.com/gorilla/rpc/json
 	go get github.com/gorilla/securecookie
-	go get github.com/hypersleep/easyssh	
+	go get github.com/hypersleep/easyssh
+	go get github.com/go-sql-driver/mysql
 
-	#cp ./plugins/iaas/iaas ./agent/haptic/plugins/iaas/
-	@ if [ ! -f ./bin/haptic/plugins/iaas/config.json ]; then \
-		echo "One time creation of config file: .bin/haptic/plugins/iaas/config.json" ; \
-		cp ./plugins/iaas/config.json.sample ./bin/haptic/plugins/iaas/config.json; \
+	@ if [ ! -f ../bin/haptic/plugins/iaas/config.json ]; then \
+		echo "One time creation of config file: ../bin/haptic/plugins/iaas/config.json" ; \
+		cp ../plugins/iaas/config.json.sample ../bin/haptic/plugins/iaas/config.json; \
 	fi
 
-	#cp ./plugins/ldap/ldap ./agent/haptic/plugins/ldap/
-	@ if [ ! -f ./bin/haptic/plugins/ldap/config.json ]; then \
-		echo "One time creation of config file: .bin/haptic/plugins/ldap/config.json" ; \
-		cp ./plugins/ldap/config.json.sample ./bin/haptic/plugins/ldap/config.json; \
+	@ if [ ! -f ../bin/haptic/plugins/ldap/config.json ]; then \
+		echo "One time creation of config file: ../bin/haptic/plugins/ldap/config.json" ; \
+		cp ../plugins/ldap/config.json.sample ../bin/haptic/plugins/ldap/config.json; \
 	fi
 
-	cp ./plugins/ldap/*.php ./bin/haptic/plugins/ldap/;
+	cp ../plugins/ldap/*.php ../bin/haptic/plugins/ldap/;
 
-	# cp ./plugins/owncloud/owncloud ./agent/haptic/plugins/owncloud/
-	@ if [ ! -f ./bin/haptic/plugins/owncloud/config.json ]; then \
-		echo "One time creation of config file: ./bin/haptic/plugins/owncloud/config.json" ; \
-		cp ./plugins/owncloud/config.json.sample ./bin/haptic/plugins/owncloud/config.json; \
+	@ if [ ! -f ../bin/haptic/plugins/owncloud/config.json ]; then \
+		echo "One time creation of config file: ../bin/haptic/plugins/owncloud/config.json" ; \
+		cp ../plugins/owncloud/config.json.sample ../bin/haptic/plugins/owncloud/config.json; \
 	fi
 
-#echo "Copying config.json to: ./agent/haptic/plugins/owncloud/config.json"; \
+	@ if [ ! -f ../bin/haptic/config.json ]; then \
+		echo "One time creation of config file: ../bin/haptic/config.json" ; \
+		cp ./core/haptic/config.json.sample ../bin/haptic/config.json; \
+	fi
+
+serve:
+	../bin/haptic/haptic serve
 
 clean:
-	rm ./bin/haptic/haptic
-	rm ./bin/haptic/plugins/iaas/iaas
-	rm ./bin/haptic/plugins/ldap/ldap
-	rm ./bin/haptic/plugins/owncloud/owncloud
+	rm ../bin/haptic/plugins/iaas/iaas
+	rm ../bin/haptic/plugins/ldap/ldap
+	rm ../bin/haptic/plugins/owncloud/owncloud
+	rm ../bin/haptic/haptic
 	go clean nanocloud.com/plugins/iaas
 	go clean nanocloud.com/plugins/owncloud
 	go clean nanocloud.com/plugins/ldap
-	go clean nanocloud.com/agent/haptic
+	go clean nanocloud.com/core/haptic
