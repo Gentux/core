@@ -132,7 +132,7 @@ func StartVm(vmName string) (bool, *nan.Err) {
 
 	e := pPluginIaas.Call("Iaas.StartVm", vmName, &res)
 	if e != nil {
-		fmt.Printf("Error calling Iaas Plugin: %v", e)
+		LogError("when calling Iaas Plugin: %v", e)
 		return false, nan.ErrFrom(e)
 	}
 
@@ -149,20 +149,26 @@ func StartVm(vmName string) (bool, *nan.Err) {
 // Does:
 // - Stop a virtual machine matching vmName
 // ========================================================================================================================
-func StopVm(vmName string) bool {
+func StopVm(vmName string) (bool, *nan.Err) {
 
 	var (
 		res string
+		err *nan.Err
 	)
 
-	err := g_PluginIaas.Call("Iaas.StopVm", vmName, &res)
-	if err != nil {
-		fmt.Printf("Error calling Iaas Plugin: %v", err)
+	var pPluginIaas *Plugin
+	pPluginIaas, err = GetPlugin("iaas")
+	if err != nil || pPluginIaas == nil {
+		return false, err
+	}
+
+	if e := pPluginIaas.Call("Iaas.StopVm", vmName, &res); e != nil {
+		LogError("when calling Iaas Plugin: %v", e)
 	}
 
 	if res == "true" {
-		return true
+		return true, nil
 	} else {
-		return false
+		return false, nil
 	}
 }

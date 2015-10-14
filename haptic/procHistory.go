@@ -25,6 +25,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+
+	nan "nanocloud.com/core/lib/libnan"
 )
 
 type History struct {
@@ -44,11 +46,19 @@ func GetHistory() []History {
 	var (
 		vms       string
 		histories []History
+
+		pPluginHistory *Plugin
+		err            *nan.Err
 	)
 
-	err := g_PluginHistory.Call("History.GetList", vms, &histories)
-	if err != nil {
-		fmt.Println("Error calling History Plugin: ", err)
+	pPluginHistory, err = GetPlugin("history")
+	if err != nil || pPluginHistory == nil {
+		return histories
+	}
+
+	e := pPluginHistory.Call("History.GetList", vms, &histories)
+	if e != nil {
+		fmt.Println("Error calling History Plugin: ", e)
 		return nil
 	}
 
@@ -65,17 +75,24 @@ func GetHistoryForUser(email string) []History {
 	var (
 		res       string
 		histories []History
+
+		pPluginHistory *Plugin
+		err            *nan.Err
 	)
 
-	// TODO this can't work as I don't send email
-	err := g_PluginHistory.Call("History.GetList", nil, &res)
-	if err != nil {
-		fmt.Println("Error calling History Plugin: ", err)
+	pPluginHistory, err = GetPlugin("history")
+	if err != nil || pPluginHistory == nil {
+		return histories
 	}
 
-	e := json.Unmarshal([]byte(res), &histories)
+	// TODO this can't work as I don't send email
+	e := pPluginHistory.Call("History.GetList", nil, &res)
 	if e != nil {
-		fmt.Println("Cannot unmarshal output from History Plugin")
+		LogError("when calling History Plugin: ", e)
+	}
+
+	if e = json.Unmarshal([]byte(res), &histories); e != nil {
+		LogError("Cannot unmarshal output from History Plugin")
 		return nil
 	}
 
@@ -91,16 +108,22 @@ func GetHistoryForUser(email string) []History {
 func AddHistory(history History) bool {
 	var res string
 
-	jsonHistory, err := json.Marshal(history)
-	if err != nil {
-		fmt.Println(err)
+	jsonHistory, e := json.Marshal(history)
+	if e != nil {
+		fmt.Println(e)
 		return false
 	}
 
-	jsonHistory, err = json.Marshal(history)
-	err = g_PluginHistory.Call("History.Add", string(jsonHistory), &res)
-	if err != nil {
-		fmt.Println("Error calling History Plugin: ", err)
+	var pPluginHistory *Plugin
+	var err *nan.Err
+
+	pPluginHistory, err = GetPlugin("history")
+	if err != nil || pPluginHistory == nil {
+		return false
+	}
+
+	if e = pPluginHistory.Call("History.Add", string(jsonHistory), &res); e != nil {
+		LogError("when calling History Plugin: ", e)
 	}
 
 	if res == "true" {

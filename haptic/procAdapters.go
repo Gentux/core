@@ -63,6 +63,16 @@ func (o adapter_t) UpdateUserPassword(_Email, _Password string) *nan.Err {
 	return nil
 }
 
+func (o adapter_t) DeleteUser(_Email string) error {
+
+	var params AccountParams = AccountParams{
+		Email: _Email}
+
+	DeleteUser(params)
+
+	return nil
+}
+
 func (o adapter_t) GetApplications() ([]Connection, error) {
 
 	return ListApplications(), nil
@@ -100,4 +110,10 @@ func (o adapter_t) StartVm(vmName string) (bool, error) {
 	result, err := StartVm(vmName)
 
 	return result, errors.New(err.Message)
+}
+
+func (o adapter_t) StopVm(vmName string) (bool, error) {
+	result, e := StopVm(vmName)
+
+	return result, errors.New(e.Message)
 }
