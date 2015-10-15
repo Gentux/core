@@ -30,18 +30,20 @@
         "offWinExe" : "/home/nanocloud/v2/winexe-static"
     },
 
-    "Apps" : {
+    "AppServer" : {
+        "User" : "Administrator",
+        "Server" : "10.0.0.42",
+        "ExecutionServers" : [
+            "10.0.0.43",
+            "10.0.0.44",
+            "10.0.0.45"
+        ],
+        "SSHPort": "22",
+        "RDPPort": "3389",
+        "Password": "Secr3t",
 
-        "AppServer" : {
-            "User" : "Administrator",
-            "Server" : "10.0.0.42",
-            "SSHPort": "22",
-            "RDPPort": "3389",
-            "Password": "Secr3t"
-
-            "WindowsDomain": "intra.nanocloud.com",
-            "XMLConfigurationFile": "/tmp/guacxml.xml"
-        }
+        "WindowsDomain": "intra.nanocloud.com",
+        "XMLConfigurationFile": "/tmp/guacxml.xml"
     },
 
     "Plugins" : {

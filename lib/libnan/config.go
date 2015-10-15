@@ -73,6 +73,7 @@ type ApplicationsConfig_t struct {
 type AppServerConfig_t struct {
 	User                 string
 	Server               string
+	ExecutionServers     []string
 	SSHPort              int
 	RDPPort              int
 	Password             string
