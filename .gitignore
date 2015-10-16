@@ -5,7 +5,7 @@ killDB.sh
 *-local*
 
 # Logging files
-activity.log
-default.log
-haptic.log
-npm-debug.log
+*.log
+
+# Dev env
+vagrant
