@@ -46,6 +46,10 @@ type AccountParams struct {
 	FirstName, LastName, Email, Password, License string
 }
 
+type LdapChangePwParams struct {
+	SamAccountName, NewPassword string
+}
+
 // ========================================================================================================================
 // ValidateCreateUserParams
 // ========================================================================================================================
@@ -216,11 +220,17 @@ func ListUsers() ([]User, *nan.Err) {
 
 func UpdateUserPassword(Email string, Password string) bool {
 	var (
-		user   User
-		result bool = false
+		user User
+		res  bool = false
+		rsp  string
 	)
 
-	g_Db.Batch(func(tx *bolt.Tx) error {
+	ldap, err := GetPlugin("ldap")
+	if err != nil {
+		return false
+	}
+
+	nanerr := g_Db.Batch(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte("users"))
 		if bucket == nil {
 			return errors.New("Bucket 'users' doesn't exist")
@@ -234,7 +244,7 @@ func UpdateUserPassword(Email string, Password string) bool {
 				user.Password = Password
 				jsonUser, _ := json.Marshal(user)
 				bucket.Put([]byte(user.Email), jsonUser)
-				result = true
+				res = true
 				break
 			}
 		}
@@ -242,9 +252,30 @@ func UpdateUserPassword(Email string, Password string) bool {
 		return nil
 	})
 
-	Log("TODO : Call LDAP plugin to update passwords")
+	if nanerr != nil {
+		LogError("DB error in UpdateUserPassword: %s", nanerr)
+		return false
+	}
 
-	return result
+	if res && len(user.Sam) > 0 && user.Sam != "0" {
+		p := LdapChangePwParams{
+			SamAccountName: user.Sam,
+			NewPassword:    Password,
+		}
+		pa, err := json.Marshal(p)
+		if err != nil {
+			LogError("LdapChangePwParams serialization error: %s", err)
+			return false
+		}
+
+		nanerr = ldap.Call("Ldap.ChangePassword", string(pa), &rsp)
+		if nanerr != nil {
+			LogError("Ldap error in UpdateUserPassword: %s", nanerr)
+			return false
+		}
+	}
+
+	return res
 }
 
 // Returns FirstName LastName Email Password License
