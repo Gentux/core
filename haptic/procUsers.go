@@ -149,7 +149,7 @@ func RegisterUser(accountParam AccountParams) *nan.Err {
 
 	var pPluginLdap *Plugin
 	pPluginLdap, err = GetPlugin("ldap")
-	if err == nil {
+	if err != nil {
 		return err
 	}
 
@@ -461,7 +461,7 @@ func (p *ProcCreateWinUser) Do() *nan.Err {
 
 	var pPluginLdap *Plugin
 	pPluginLdap, err = GetPlugin("ldap")
-	if err == nil {
+	if err != nil {
 		return err
 	}
 
@@ -639,7 +639,7 @@ func (p *ProcCreateWinUser) Undo(accountParams AccountParams) *nan.Err {
 
 	var pPluginLdap *Plugin
 	pPluginLdap, err = GetPlugin("ldap")
-	if err == nil {
+	if err != nil {
 		return err
 	}
 
