@@ -69,11 +69,24 @@ func DeleteUser(accountParams AccountParams) *nan.Err {
 		return LogErrorCode(ErrAccountDoesNotExist)
 	}
 
-	if user, err := g_Db.GetUser(accountParams.Email); err != nil {
+	var user User
+	if user, err = g_Db.GetUser(accountParams.Email); err != nil {
 		return LogErrorCode(err)
-	} else {
-		return g_Db.DeleteUser(user)
 	}
+	if err = g_Db.DeleteUser(user); err != nil {
+		return err
+	}
+
+	oc, err := GetPlugin("owncloud")
+	if err == nil {
+		var reply bool
+		e := oc.Call("Owncloud.DeleteUser", accountParams.Email, &reply)
+		if e != nil {
+			LogError("Owncloud error in RegisterUser: %s", e)
+		}
+	}
+
+	return nil
 }
 
 // ========================================================================================================================
