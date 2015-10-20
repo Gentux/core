@@ -177,9 +177,23 @@ func RegisterUser(accountParam AccountParams) *nan.Err {
 
 	if e != nil {
 		return LogErrorCode(nan.ErrSomethingWrong)
-	} else {
-		return OkAccountBeingCreated
 	}
+
+	oc, err := GetPlugin("owncloud")
+	if err == nil {
+		params := struct {
+			Username, Password string
+		}{
+			user.Email, user.Password,
+		}
+		var reply bool
+		nanerr := oc.Call("Owncloud.CreateUser", params, &reply)
+		if nanerr != nil {
+			LogError("Owncloud error in RegisterUser: %s", nanerr)
+		}
+	}
+
+	return OkAccountBeingCreated
 }
 
 // ========================================================================================================================
@@ -222,7 +236,6 @@ func UpdateUserPassword(Email string, Password string) bool {
 	var (
 		user User
 		res  bool = false
-		rsp  string
 	)
 
 	ldap, err := GetPlugin("ldap")
@@ -268,10 +281,25 @@ func UpdateUserPassword(Email string, Password string) bool {
 			return false
 		}
 
-		nanerr = ldap.Call("Ldap.ChangePassword", string(pa), &rsp)
+		var reply string
+		nanerr = ldap.Call("Ldap.ChangePassword", string(pa), &reply)
 		if nanerr != nil {
 			LogError("Ldap error in UpdateUserPassword: %s", nanerr)
 			return false
+		}
+	}
+
+	oc, err := GetPlugin("owncloud")
+	if err == nil {
+		params := struct {
+			Username, Password string
+		}{
+			user.Email, Password,
+		}
+		var reply bool
+		nanerr = oc.Call("Owncloud.ChangePassword", params, &reply)
+		if nanerr != nil {
+			LogError("Owncloud error in UpdateUserPassword: %s", nanerr)
 		}
 	}
 
