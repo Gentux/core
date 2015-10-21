@@ -24,6 +24,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 )
 
@@ -34,6 +35,12 @@ type GetHistoryListReply struct {
 	Histories []History
 }
 
+type HistoryArgs struct {
+	ConnectionId string
+	StartDate    string
+	EndDate      string
+}
+
 func (p *ServiceHistory) GetList(r *http.Request, args *NoArgs, reply *GetHistoryListReply) error {
 
 	cookie, _ := r.Cookie("nanocloud")
@@ -42,6 +49,7 @@ func (p *ServiceHistory) GetList(r *http.Request, args *NoArgs, reply *GetHistor
 	}
 
 	reply.Histories = GetHistory()
+
 	return nil
 }
 
@@ -56,13 +64,9 @@ func (p *ServiceHistory) GetListForUser(r *http.Request, args *NoArgs, reply *Ge
 	return nil
 }
 
-func (p *ServiceHistory) Add(r *http.Request, args *History, reply *RequestState) error {
+func (p *ServiceHistory) Add(r *http.Request, args *HistoryArgs, reply *RequestState) error {
 
-	//value := make(map[string]string)
-	//cookie, _ := r.Cookie("nanocloud")
-	//cookieHandler.Decode("nanocloud", cookie.Value, &value)
-	//user, _ := g_Db.GetUser(value["email"])
-
+	fmt.Println(*args)
 	reply.Success = AddHistory(*args)
 	return nil
 }

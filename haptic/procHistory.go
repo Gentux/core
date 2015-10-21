@@ -31,8 +31,12 @@ import (
 
 type History struct {
 	ConnectionId string
-	StartDate    string
-	EndDate      string
+	Stats        []Stat
+}
+
+type Stat struct {
+	StartDate string
+	EndDate   string
 }
 
 // ========================================================================================================================
@@ -105,7 +109,7 @@ func GetHistoryForUser(email string) []History {
 // Does:
 // - Add history entry for a specific user
 // ========================================================================================================================
-func AddHistory(history History) bool {
+func AddHistory(history HistoryArgs) bool {
 	var res string
 
 	jsonHistory, e := json.Marshal(history)

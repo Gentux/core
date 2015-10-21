@@ -86,6 +86,7 @@ func (p *ServiceUsers) RegisterUser(r *http.Request, args *RegisterUserParam, re
 		reply.Result = false
 	} else {
 		reply.Result = true
+		go CreateConnections()
 	}
 
 	return nil
