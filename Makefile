@@ -72,6 +72,7 @@ setup:
 	go get github.com/gorilla/securecookie
 	go get github.com/hypersleep/easyssh
 	go get github.com/go-sql-driver/mysql
+	go get gopkg.in/ldap.v2
 
         # Copy configuration files
 
