@@ -90,8 +90,6 @@ setup:
 		cp ../plugins/ldap/config.json.sample ../bin/haptic/plugins/ldap/config.json; \
 	fi
 
-	cp ../plugins/ldap/*.php ../bin/haptic/plugins/ldap/;
-
 	@ if [ ! -f ../bin/haptic/plugins/owncloud/config.json ]; then \
 		echo "One time creation of config file: ../bin/haptic/plugins/owncloud/config.json" ; \
 		cp ../plugins/owncloud/config.json.sample ../bin/haptic/plugins/owncloud/config.json; \
