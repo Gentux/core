@@ -9,3 +9,4 @@ killDB.sh
 
 # Dev env
 vagrant
+*.swp
