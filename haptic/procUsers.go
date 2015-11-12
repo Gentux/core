@@ -138,8 +138,7 @@ func RegisterUser(accountParam AccountParams) *nan.Err {
 			Sam:          "",
 			CreationTime: "",
 		}
-		userJson []byte
-		resp     string
+		resp string
 	)
 
 	t := time.Now()
@@ -177,20 +176,6 @@ func RegisterUser(accountParam AccountParams) *nan.Err {
 
 	if e != nil {
 		return LogErrorCode(nan.ErrSomethingWrong)
-	}
-
-	oc, err := GetPlugin("owncloud")
-	if err == nil {
-		params := struct {
-			Username, Password string
-		}{
-			user.Email, user.Password,
-		}
-		var reply bool
-		nanerr := oc.Call("Owncloud.CreateUser", params, &reply)
-		if nanerr != nil {
-			LogError("Owncloud error in RegisterUser: %s", nanerr)
-		}
 	}
 
 	return OkAccountBeingCreated
