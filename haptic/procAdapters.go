@@ -97,23 +97,39 @@ func (o adapter_t) GetVmList() (string, error) {
 func (o adapter_t) DownloadWindowsVm() (bool, error) {
 	result, err := DownloadWindowsVm()
 
-	return result, errors.New(err.Message)
+	if err != nil {
+		return result, errors.New(err.Message)
+	} else {
+		return result, nil
+	}
 }
 
 func (o adapter_t) DownloadStatus() (bool, error) {
 	result, err := DownloadStatus()
 
-	return result, errors.New(err.Message)
+	if err != nil {
+		return result, errors.New(err.Message)
+	} else {
+		return result, nil
+	}
 }
 
 func (o adapter_t) StartVm(vmName string) (bool, error) {
 	result, err := StartVm(vmName)
 
-	return result, errors.New(err.Message)
+	if err != nil {
+		return result, errors.New(err.Message)
+	} else {
+		return result, nil
+	}
 }
 
 func (o adapter_t) StopVm(vmName string) (bool, error) {
-	result, e := StopVm(vmName)
+	result, err := StopVm(vmName)
 
-	return result, errors.New(e.Message)
+	if err != nil {
+		return result, errors.New(err.Message)
+	} else {
+		return result, nil
+	}
 }
