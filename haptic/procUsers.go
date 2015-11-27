@@ -158,7 +158,10 @@ func RegisterUser(accountParam AccountParams) *nan.Err {
 	}
 	Log("Configure Windows user profile")
 	params = fmt.Sprintf(`{ "UserEmail" : "%s", "password" : "%s" }`, user.Email, user.Password)
-	pPluginLdap.Call("Ldap.AddUser", params, &user.Sam)
+	pluginErr := pPluginLdap.Call("Ldap.AddUser", params, &user.Sam)
+	if pluginErr != nil {
+		Log("Error when calling LDAP plugin: ", pluginErr)
+	}
 
 	userJson, e := json.Marshal(user)
 	if e != nil {
