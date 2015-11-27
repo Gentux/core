@@ -181,6 +181,8 @@ func RegisterUser(accountParam AccountParams) *nan.Err {
 		return LogErrorCode(nan.ErrSomethingWrong)
 	}
 
+	go CreateConnections()
+
 	return OkAccountBeingCreated
 }
 

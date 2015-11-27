@@ -86,6 +86,8 @@ func DeleteUser(accountParams AccountParams) *nan.Err {
 		}
 	}
 
+	go CreateConnections()
+
 	return nil
 }
 
