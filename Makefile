@@ -54,12 +54,14 @@ haptic: history iaas ldap owncloud ../bin/haptic/haptic
 
 setup:
 	mkdir -p ../bin/haptic/plugins
+	mkdir -p ../bin/haptic/scripts
 	mkdir -p ../bin/haptic/plugins/history
 	mkdir -p ../bin/haptic/plugins/iaas
 	mkdir -p ../bin/haptic/plugins/ldap
 	mkdir -p ../bin/haptic/plugins/owncloud
 
 	mkdir -p ../bin/haptic/external/bin
+	cp scripts/*.sh ../bin/haptic/scripts/
 
 	echo "Installing go packages dependencies"
 	go get github.com/dullgiulio/pingo
@@ -74,8 +76,7 @@ setup:
 	go get github.com/go-sql-driver/mysql
 	go get gopkg.in/ldap.v2
 
-        # Copy configuration files
-
+	# Copy configuration files
 	@ if [ ! -f ../bin/haptic/plugins/history/config.json ]; then \
 		echo "One time creation of config file: ../bin/haptic/plugins/history/config.json" ; \
 		cp ../plugins/history/config.json.sample ../bin/haptic/plugins/history/config.json; \
