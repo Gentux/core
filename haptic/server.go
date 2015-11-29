@@ -23,12 +23,8 @@
 package main
 
 import (
-	"fmt"
-	"io"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"time"
 
 	nan "nanocloud.com/core/lib/libnan"
@@ -51,19 +47,6 @@ type DefaultReply struct {
 	Message string
 }
 
-func StaticHandler(w http.ResponseWriter, pRequest *http.Request) {
-
-	url := pRequest.URL.String()
-
-	if url == "/" {
-		url = "/index.html"
-	}
-
-	LocalPath := nan.Config().Proxy.FrontendRootDir + url
-
-	http.ServeFile(w, pRequest, LocalPath)
-}
-
 func Enforce(profile string, encodedCookie string) bool {
 	// TODO method calling this function should return 403 status code
 	value := make(map[string]string)
@@ -72,41 +55,6 @@ func Enforce(profile string, encodedCookie string) bool {
 	user, _ := g_Db.GetUser(value["email"])
 
 	return user.Profile == "admin" || profile == user.Profile
-}
-
-func uploadHandler(w http.ResponseWriter, r *http.Request) {
-
-	// the FormFile function takes in the POST input id file
-	file, header, err := r.FormFile("file")
-	if err != nil {
-		http.Error(w, http.StatusText(400), 400)
-		return
-	}
-	defer file.Close()
-
-	// Compute a hash name for this file on disk
-	tempDst := filepath.Join(nan.Config().CommonBaseDir, "uploads", header.Filename)
-	if err = os.MkdirAll(filepath.Join(nan.Config().CommonBaseDir, "uploads"), os.ModePerm); err != nil {
-		http.Error(w, http.StatusText(500), 500)
-		return
-	}
-	tmpOutput, err := os.Create(tempDst)
-	if err != nil {
-		http.Error(w, http.StatusText(500), 500)
-		return
-	}
-	defer tmpOutput.Close()
-
-	// write the content from POST to the file
-	_, err = io.Copy(tmpOutput, file)
-	if err != nil {
-		http.Error(w, http.StatusText(500), 500)
-	}
-
-	fmt.Fprintf(w, "File uploaded successfully : ")
-	fmt.Fprintf(w, header.Filename)
-
-	go SyncUploadedFile(tempDst)
 }
 
 func SecureHandler(h http.Handler) http.Handler {
@@ -199,16 +147,25 @@ func logoutHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func RunServer() {
+	server := http.NewServeMux()
 
 	// Setup basic HTTP server to serve static content
-	http.HandleFunc("/", StaticHandler)
+	server.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		url := r.URL.String()
+		if url == "/" {
+			url = "/index.html"
+		}
+
+		LocalPath := nan.Config().Proxy.FrontendRootDir + url
+		http.ServeFile(w, r, LocalPath)
+	})
 
 	// Login handler
-	http.HandleFunc("/login", loginHandler)
-	http.HandleFunc("/logout", logoutHandler)
+	server.HandleFunc("/login", loginHandler)
+	server.HandleFunc("/logout", logoutHandler)
 
 	// Upload file handler
-	http.HandleFunc("/upload", uploadHandler)
+	server.Handle("/upload", streamHandler(uploadHandler))
 
 	// Setup RPC server
 	pRpcServer := rpc.NewServer()
@@ -219,10 +176,10 @@ func RunServer() {
 	pRpcServer.RegisterService(new(ServiceHistory), "")
 
 	secureHandler := SecureHandler(pRpcServer)
-	http.Handle("/rpc", secureHandler)
+	server.Handle("/rpc", secureHandler)
 
 	Log("Now listening on http://localhost:" + nan.Config().Port)
-	e := http.ListenAndServe(":"+nan.Config().Port, nil)
+	e := http.ListenAndServe(":"+nan.Config().Port, server)
 	if e != nil {
 		log.Fatal(e)
 	}
