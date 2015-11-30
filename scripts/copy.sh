@@ -11,4 +11,7 @@ fi
 FILENAME=${1}
 SCP=$(which scp)
 
-sshpass -p "${PASSWORD}" "${SCP}" -P "${PORT}" "${FILENAME}" "${USER}@${SERVER}:~/Documents/"
+sshpass -p "${PASSWORD}" "${SCP}" -o StrictHostKeyChecking=no -P "${PORT}" "${FILENAME}" "${USER}@${SERVER}:~/Documents/"
+if [ $? -eq 0 ]; then
+  rm "${FILENAME}"
+fi
