@@ -183,6 +183,11 @@ func assemble(path string, fileName string) {
 	}
 
 	// create final file to write to
+	err = os.MkdirAll(nan.Config().CommonBaseDir+"uploads", 02750)
+	if err != nil {
+		return
+	}
+
 	dst, err := os.Create(nan.Config().CommonBaseDir + "uploads/" + fileName)
 	if err != nil {
 		return
