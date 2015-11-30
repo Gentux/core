@@ -11,4 +11,4 @@ fi
 COMMAND=${1}
 SSH=$(which ssh)
 
-sshpass -p "${PASSWORD}" "${SSH}" -p "${PORT}" "${USER}@${SERVER}" "${COMMAND}"
+sshpass -p "${PASSWORD}" "${SSH}" -o StrictHostKeyChecking=no -p "${PORT}" "${USER}@${SERVER}" "${COMMAND}"
