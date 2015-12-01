@@ -1,10 +1,10 @@
 # Nanocloud community Core : Haptic
 
-**Haptic** is the central core of **Nanocloud community** solution.
+**Core** is the central part of **Nanocloud community** solution. It provide
+our **API**.
 
 This project alone can't do much, please refer to
-[nanocloud_community](https://github.com/Nanocloud/nanocloud_community) or
-[installer](https://github.com/Nanocloud/installer) for more information.
+[nanocloud](https://github.com/Nanocloud/community).
 
 ## Licence
 
