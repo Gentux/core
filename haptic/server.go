@@ -146,6 +146,27 @@ func logoutHandler(response http.ResponseWriter, request *http.Request) {
 	http.Redirect(response, request, "/", 302)
 }
 
+func clearCookies(response http.ResponseWriter, request *http.Request) {
+	const shortForm = "2006-Jan-02"
+	expirationTime, _ := time.Parse(shortForm, "1970-Jan-01")
+
+	value := map[string]string{
+		"email":          "",
+		"expirationTime": expirationTime.Format(time.RFC3339),
+		"expired":        "true",
+	}
+	if _, err := cookieHandler.Encode("JSESSIONID", value); err == nil {
+		cookie := &http.Cookie{
+			Name:     "JSESSIONID",
+			Value:    "",
+			Path:     "/guacamole/",
+			Expires:  expirationTime,
+			HttpOnly: true,
+		}
+		http.SetCookie(response, cookie)
+	}
+}
+
 func RunServer() {
 	server := http.NewServeMux()
 
@@ -163,6 +184,7 @@ func RunServer() {
 	// Login handler
 	server.HandleFunc("/login", loginHandler)
 	server.HandleFunc("/logout", logoutHandler)
+	server.HandleFunc("/clearCookies", clearCookies)
 
 	// Upload file handler
 	server.Handle("/upload", streamHandler(uploadHandler))
