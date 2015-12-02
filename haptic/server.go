@@ -147,24 +147,15 @@ func logoutHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func clearCookies(response http.ResponseWriter, request *http.Request) {
-	const shortForm = "2006-Jan-02"
-	expirationTime, _ := time.Parse(shortForm, "1970-Jan-01")
+	expirationTime, _ := time.Parse(time.RFC1123, "Thu, 01 Jan 1970 00:00:00 GMT")
 
-	value := map[string]string{
-		"email":          "",
-		"expirationTime": expirationTime.Format(time.RFC3339),
-		"expired":        "true",
+	cookie := &http.Cookie{
+		Name:    "JSESSIONID",
+		Path:    "/guacamole/",
+		MaxAge:  -1,
+		Expires: expirationTime,
 	}
-	if _, err := cookieHandler.Encode("JSESSIONID", value); err == nil {
-		cookie := &http.Cookie{
-			Name:     "JSESSIONID",
-			Value:    "",
-			Path:     "/guacamole/",
-			Expires:  expirationTime,
-			HttpOnly: true,
-		}
-		http.SetCookie(response, cookie)
-	}
+	http.SetCookie(response, cookie)
 }
 
 func RunServer() {
